@@ -16,22 +16,26 @@
             background-color: #f4f4f4;
             animation: fadeIn 1s ease-in;
         }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
         .login-container {
             background: white;
             padding: 2rem;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .login-container img {
-            width: 150px;
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
             margin-bottom: 1.5rem;
+            border-radius: 10px;
         }
         .login-container input {
             width: 100%;
@@ -64,11 +68,36 @@
 <body>
 <div class="login-container">
     <img src="../../../../../image.png" height="150" width="150"/>
-    <form>
-        <input type="text" name="name" placeholder="Name" required>
-        <input type="password" name="password" placeholder="Passwort" required>
+    <form onsubmit="login(event)" style="width: 100%;">
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="password" id="password" placeholder="Passwort" required>
         <button type="submit">Login</button>
     </form>
 </div>
+
+<script>
+    function login(event) {
+        event.preventDefault();
+        const username = document.getElementById('name').value;
+        const password = document.getElementById('password').value;
+
+        fetch('http://localhost:3000/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = 'Bestand.html';
+                } else {
+                    alert('Falscher Name oder Passwort!');
+                }
+            })
+            .catch(error => console.error('Fehler:', error));
+    }
+</script>
 </body>
 </html>
