@@ -58,5 +58,36 @@
     <span>Mehl</span>
     <input type="number" min="0">
 </div>
+
+
+<button onclick="bestandSpeichern()">Speichern</button>
+
+<script>
+    function bestandSpeichern() {
+        const items = document.querySelectorAll(".item input");
+        const daten = {
+            kaffee: parseInt(items[0].value) || 0,
+            milch: parseInt(items[1].value) || 0,
+            eier: parseInt(items[2].value) || 0,
+            mehl: parseInt(items[3].value) || 0
+        };
+
+        fetch("http://localhost:3000/bestand", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(daten)
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Bestand gespeichert!");
+                } else {
+                    alert("Fehler beim Speichern.");
+                }
+            })
+            .catch(err => console.error("Fehler:", err));
+    }
+</script>
+
 </body>
 </html>
