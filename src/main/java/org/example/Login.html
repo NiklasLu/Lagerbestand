@@ -66,6 +66,7 @@
     </style>
 </head>
 <body>
+
 <div class="login-container">
     <img src="../../../../../image.png" height="150" width="150"/>
     <form onsubmit="login(event)" style="width: 100%;">
@@ -81,6 +82,8 @@
         const username = document.getElementById('name').value;
         const password = document.getElementById('password').value;
 
+        console.log("Login gestartet mit", username, password);
+
         fetch('http://localhost:3000/login', {
             method: 'POST',
             headers: {
@@ -90,13 +93,21 @@
         })
             .then(response => response.json())
             .then(data => {
+                console.log("Antwort vom Server:", data);
                 if (data.success) {
-                    window.location.href = 'Bestand.html';
+                    if (username === "admin") {
+                        window.location.href = "Chef.html";
+                    } else {
+                        window.location.href = "Pruefen.html"; // oder Bestand.html
+                    }
                 } else {
-                    alert('Falscher Name oder Passwort!');
+                    alert("❌ Falscher Name oder Passwort!");
                 }
             })
-            .catch(error => console.error('Fehler:', error));
+            .catch(error => {
+                console.error('Fehler beim Login:', error);
+                alert("❌ Serverfehler beim Login.");
+            });
     }
 </script>
 </body>

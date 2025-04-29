@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Chefansicht – Abweichungen</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-top: 2rem;
+        }
+        th, td {
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+        th {
+            background-color: #eee;
+        }
+    </style>
+</head>
+<body>
+<h1>Gemeldete Abweichungen</h1>
+
+<table id="abweichungstabelle">
+    <thead>
+    <th>Aktion</th>
+    <tr>
+        <th>Zeit</th>
+        <th>Kaffee</th>
+        <th>Milch</th>
+        <th>Eier</th>
+        <th>Mehl</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- Inhalte werden per JS geladen -->
+    </tbody>
+</table>
+
+<script>
+    fetch("http://localhost:3000/abweichungen")
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.querySelector("#abweichungstabelle tbody");
+            data.forEach(eintrag => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${eintrag.zeit}</td>
+                    <td>${eintrag.kaffee}</td>
+                    <td>${eintrag.milch}</td>
+                    <td>${eintrag.eier}</td>
+                    <td>${eintrag.mehl}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(err => {
+            console.error("Fehler beim Laden der Abweichungen:", err);
+        });
+    function abweichungenLoeschen() {
+        if (!confirm("Möchtest du wirklich alle gemeldeten Abweichungen löschen?")) return;
+
+        fetch("http://localhost:3000/abweichungen/clear", {
+            method: "DELETE"
+        })
+            .then(res => res.json())
+            .then(data => {
+                alert("✅ " + data.deleted + " Abweichung(en) gelöscht.");
+                location.reload(); // Tabelle neu laden
+            })
+            .catch(err => {
+                console.error("Fehler beim Löschen:", err);
+                alert("❌ Fehler beim Löschen.");
+            });
+
+        fetch("http://localhost:3000/abweichungen")
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector("#abweichungstabelle tbody");
+                data.forEach(eintrag => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                    <td>${eintrag.zeit}</td>
+                    <td>${eintrag.kaffee}</td>
+                    <td>${eintrag.milch}</td>
+                    <td>${eintrag.eier}</td>
+                    <td>${eintrag.mehl}</td>
+                    <td><button onclick="korrigieren(${eintrag.id})">Korrigieren</button></td>
+                `;
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(err => {
+                console.error("Fehler beim Laden der Abweichungen:", err);
+            });
+
+        // 🔽 HIER die Funktion einfügen
+        function korrigieren(id) {
+            if (!confirm("Bestand mit Werten dieser Abweichung überschreiben?")) return;
+
+            fetch(`http://localhost:3000/abweichung/korrigieren?id=${id}`, {
+                method: "POST"
+            })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message);
+                    location.reload(); // Tabelle neu laden
+                })
+                .catch(err => {
+                    console.error("Fehler bei Korrektur:", err);
+                    alert("❌ Fehler beim Korrigieren.");
+                });
+        }
+    }
+
+</script>
+
+<button onclick="abweichungenLoeschen()" style="margin-top: 2rem; background-color: #d9534f;">Abweichungen löschen</button>
+
+</body>
+</html>
