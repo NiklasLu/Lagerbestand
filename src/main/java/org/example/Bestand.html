@@ -41,35 +41,46 @@
 
 <div class="item">
     <span>Kaffee</span>
-    <input type="number" min="0">
+    <input type="number" id="kaffee" min="0">
 </div>
 
 <div class="item">
     <span>Milch</span>
-    <input type="number" min="0">
+    <input type="number" id="milch" min="0">
 </div>
 
 <div class="item">
     <span>Eier</span>
-    <input type="number" min="0">
+    <input type="number" id="eier" min="0">
 </div>
 
 <div class="item">
     <span>Mehl</span>
-    <input type="number" min="0">
+    <input type="number" id="mehl" min="0">
 </div>
-
 
 <button onclick="bestandSpeichern()">Speichern</button>
 
 <script>
+    // Bestehenden Bestand laden
+    fetch("http://localhost:3000/bestand")
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("kaffee").value = data.kaffee;
+            document.getElementById("milch").value = data.milch;
+            document.getElementById("eier").value = data.eier;
+            document.getElementById("mehl").value = data.mehl;
+        })
+        .catch(err => {
+            console.error("Fehler beim Laden des Lagerbestands:", err);
+        });
+
     function bestandSpeichern() {
-        const items = document.querySelectorAll(".item input");
         const daten = {
-            kaffee: parseInt(items[0].value) || 0,
-            milch: parseInt(items[1].value) || 0,
-            eier: parseInt(items[2].value) || 0,
-            mehl: parseInt(items[3].value) || 0
+            kaffee: parseInt(document.getElementById("kaffee").value) || 0,
+            milch: parseInt(document.getElementById("milch").value) || 0,
+            eier: parseInt(document.getElementById("eier").value) || 0,
+            mehl: parseInt(document.getElementById("mehl").value) || 0
         };
 
         fetch("http://localhost:3000/bestand", {
@@ -80,9 +91,9 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert("Bestand gespeichert!");
+                    alert("✅ Bestand gespeichert!");
                 } else {
-                    alert("Fehler beim Speichern.");
+                    alert("❌ Fehler beim Speichern.");
                 }
             })
             .catch(err => console.error("Fehler:", err));
