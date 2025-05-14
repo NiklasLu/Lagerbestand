@@ -11,6 +11,7 @@ import com.google.gson.*;
 
 public class SimpleLoginServer {
     public static void main(String[] args) throws IOException {
+        //updateKlartextPasswoerterZuHash(); //war nur zum hashen der bestehenden User
         HttpServer server = HttpServer.create(new InetSocketAddress(3000), 0);
         server.createContext("/login", new LoginHandler());
         server.createContext("/bestand", new BestandHandler());
@@ -28,6 +29,8 @@ public class SimpleLoginServer {
         }
         System.out.println("✅ Server läuft auf http://localhost:3000");
     }
+
+
 
     static class LoginHandler implements HttpHandler {
         @Override
@@ -565,4 +568,33 @@ public class SimpleLoginServer {
             throw new RuntimeException("Fehler beim Hashen des Passworts", e);
         }
     }
-}
+
+    public static void updateKlartextPasswoerterZuHash() {
+        String url = "jdbc:mysql://localhost:3306/lagerbestand?useSSL=false";
+        String dbUser = "javauser";
+        String dbPass = "passwort123";
+
+        try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
+            PreparedStatement select = conn.prepareStatement("SELECT id, passwort FROM benutzer");
+            ResultSet rs = select.executeQuery();
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String original = rs.getString("passwort");
+
+                if (original.length() < 64) { // vermutlich noch nicht gehasht
+                    String hash = hashPassword(original);
+                    PreparedStatement update = conn.prepareStatement("UPDATE benutzer SET passwort = ? WHERE id = ?");
+                    update.setString(1, hash);
+                    update.setInt(2, id);
+                    update.executeUpdate();
+
+                    System.out.println("✔ Benutzer-ID " + id + " → Passwort gehasht.");
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    }

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Bestand prüfen</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      margin-bottom: 1.5rem;
+    }
+    .item {
+      background: white;
+      padding: 0.5rem 1rem;
+      margin: 0.5rem 0;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      width: 250px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .item input {
+      width: 60px;
+      padding: 0.3rem;
+      text-align: center;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      margin-top: 1.5rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #388E3C;
+    }
+  </style>
+</head>
+<body>
+<h1>Bestand prüfen</h1>
+
+<div class="item">
+  <span>Kaffee</span>
+  <input type="number" id="kaffee" min="0">
+</div>
+
+<div class="item">
+  <span>Milch</span>
+  <input type="number" id="milch" min="0">
+</div>
+
+<div class="item">
+  <span>Eier</span>
+  <input type="number" id="eier" min="0">
+</div>
+
+<div class="item">
+  <span>Mehl</span>
+  <input type="number" id="mehl" min="0">
+</div>
+
+<button onclick="pruefen()">Bestände prüfen</button>
+
+<script>
+  function pruefen() {
+    const daten = {
+      kaffee: parseInt(document.getElementById('kaffee').value) || 0,
+      milch: parseInt(document.getElementById('milch').value) || 0,
+      eier: parseInt(document.getElementById('eier').value) || 0,
+      mehl: parseInt(document.getElementById('mehl').value) || 0
+    };
+
+    fetch("http://localhost:3000/pruefen", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(daten)
+    })
+            .then(res => res.json())
+            .then(data => {
+              alert(data.message);
+            })
+            .catch(err => {
+              console.error("Fehler:", err);
+              alert("Serverfehler bei der Prüfung.");
+            });
+  }
+</script>
+</body>
+</html>
