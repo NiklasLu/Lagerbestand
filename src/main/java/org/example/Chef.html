@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Chefansicht – Lagerbestand & Benutzer</title>
+    <title>Chefansicht – Lager & Benutzer</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -26,39 +26,41 @@
         th {
             background-color: #eee;
         }
-        form {
-            background: white;
-            padding: 1.5rem;
-            margin-top: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 0 5px rgba(0,0,0,0.1);
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        input, button {
-            width: 100%;
-            padding: 0.6rem;
-            margin: 0.5rem 0;
+        input[type="number"], input[type="text"], input[type="password"] {
+            width: 80%;
+            padding: 0.5rem;
+            text-align: center;
             border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 1rem;
+            border-radius: 5px;
         }
         button {
+            margin-top: 1.5rem;
+            padding: 0.6rem 1.2rem;
+            font-size: 1rem;
             background-color: #4CAF50;
             color: white;
             border: none;
+            border-radius: 6px;
             cursor: pointer;
         }
         button:hover {
             background-color: #388E3C;
         }
+        form {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            max-width: 400px;
+            margin: 2rem auto;
+        }
     </style>
 </head>
 <body>
 
-<h1>Aktueller Lagerbestand</h1>
-<table id="bestandstabelle">
+<h1>Aktuellen Lagerbestand bearbeiten</h1>
+
+<table>
     <thead>
     <tr>
         <th>Kaffee</th>
@@ -68,11 +70,18 @@
     </tr>
     </thead>
     <tbody>
-    <!-- Bestand wird hier geladen -->
+    <tr>
+        <td><input type="number" id="kaffee" min="0"></td>
+        <td><input type="number" id="milch" min="0"></td>
+        <td><input type="number" id="eier" min="0"></td>
+        <td><input type="number" id="mehl" min="0"></td>
+    </tr>
     </tbody>
 </table>
 
-<h2>Alle Benutzer</h2>
+<button onclick="bestandSpeichern()">Bestand speichern</button>
+
+<h2>Benutzerliste</h2>
 <table id="benutzertabelle">
     <thead>
     <tr>
@@ -81,17 +90,17 @@
     </tr>
     </thead>
     <tbody>
-    <!-- Benutzerliste wird hier geladen -->
+    <!-- JS füllt Benutzerliste -->
     </tbody>
 </table>
 
 <h2>Neuen Benutzer anlegen</h2>
-<form id="benutzerForm" onsubmit="benutzerAnlegen(event)">
-    <label for="benutzername">Benutzername:</label>
-    <input type="text" id="benutzername" required>
+<form onsubmit="benutzerAnlegen(event)">
+    <label for="benutzername">Benutzername:</label><br>
+    <input type="text" id="benutzername" required><br><br>
 
-    <label for="passwort">Passwort:</label>
-    <input type="password" id="passwort" required>
+    <label for="passwort">Passwort:</label><br>
+    <input type="password" id="passwort" required><br><br>
 
     <button type="submit">Benutzer erstellen</button>
 </form>
@@ -101,19 +110,42 @@
     fetch("http://localhost:3000/bestand")
         .then(res => res.json())
         .then(data => {
-            const tbody = document.querySelector("#bestandstabelle tbody");
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${data.kaffee}</td>
-                <td>${data.milch}</td>
-                <td>${data.eier}</td>
-                <td>${data.mehl}</td>
-            `;
-            tbody.appendChild(row);
+            document.getElementById("kaffee").value = data.kaffee;
+            document.getElementById("milch").value = data.milch;
+            document.getElementById("eier").value = data.eier;
+            document.getElementById("mehl").value = data.mehl;
         })
         .catch(err => {
             console.error("Fehler beim Laden des Lagerbestands:", err);
         });
+
+    // Bestand speichern
+    function bestandSpeichern() {
+        const daten = {
+            kaffee: parseInt(document.getElementById("kaffee").value) || 0,
+            milch: parseInt(document.getElementById("milch").value) || 0,
+            eier: parseInt(document.getElementById("eier").value) || 0,
+            mehl: parseInt(document.getElementById("mehl").value) || 0
+        };
+
+        fetch("http://localhost:3000/bestand", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(daten)
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ Bestand gespeichert.");
+                } else {
+                    alert("❌ Fehler beim Speichern.");
+                }
+            })
+            .catch(err => {
+                console.error("Fehler beim Speichern:", err);
+                alert("❌ Serverfehler beim Speichern.");
+            });
+    }
 
     // Benutzerliste laden
     fetch("http://localhost:3000/benutzer")
@@ -133,7 +165,6 @@
     // Benutzer anlegen
     function benutzerAnlegen(event) {
         event.preventDefault();
-
         const name = document.getElementById("benutzername").value;
         const passwort = document.getElementById("passwort").value;
 
@@ -147,14 +178,14 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert("✅ Benutzer erfolgreich angelegt.");
-                    location.reload();
+                    alert("✅ Benutzer angelegt.");
+                    location.reload(); // Liste neu laden
                 } else {
                     alert("❌ Fehler beim Anlegen.");
                 }
             })
             .catch(err => {
-                console.error("Fehler:", err);
+                console.error("Fehler beim Anlegen:", err);
                 alert("❌ Serverfehler beim Anlegen.");
             });
     }
