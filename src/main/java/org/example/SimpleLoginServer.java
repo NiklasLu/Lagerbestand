@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpHandler;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.sql.*;
 import com.google.gson.*;
 
@@ -23,6 +24,8 @@ public class SimpleLoginServer {
         server.createContext("/abweichung/korrigieren", new AbweichungKorrigierenHandler());
         server.createContext("/benutzer", new BenutzerHandler());
         server.createContext("/benutzer/anlegen", new BenutzerAnlegenHandler());
+        server.createContext("/historie.html", new HtmlSeitenHandler("src/main/java/org/example/Bestands-Historie.html"));
+        server.createContext("/bestand/historie", new BestandHistorieHandler());
         File file = new File("abweichungen.txt");
         if (file.exists()) {
             System.out.println("⚠️ Es liegen möglicherweise Abweichungen zur Prüfung vor (siehe abweichungen.txt)");
@@ -30,7 +33,30 @@ public class SimpleLoginServer {
         System.out.println("✅ Server läuft auf http://localhost:3000");
     }
 
+    static class HtmlSeitenHandler implements HttpHandler {
+        private final String dateipfad;
 
+        public HtmlSeitenHandler(String dateipfad) {
+            this.dateipfad = dateipfad;
+        }
+
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Content-Type", "text/html; charset=UTF-8");
+
+            File file = new File(dateipfad);
+            if (!file.exists()) {
+                exchange.sendResponseHeaders(404, -1);
+                return;
+            }
+
+            byte[] inhalt = Files.readAllBytes(file.toPath());
+            exchange.sendResponseHeaders(200, inhalt.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(inhalt);
+            }
+        }
+    }
 
     static class LoginHandler implements HttpHandler {
         @Override
@@ -366,7 +392,9 @@ public class SimpleLoginServer {
                 int eier = json.get("eier").getAsInt();
                 int mehl = json.get("mehl").getAsInt();
 
-                boolean success = speichereBestand(kaffee, milch, eier, mehl);
+                String kommentar = json.has("kommentar") ? json.get("kommentar").getAsString() : "kein Kommentar";
+                boolean success = speichereBestand(kaffee, milch, eier, mehl, kommentar);
+
 
                 String response = "{\"success\":" + success + "}";
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -420,19 +448,20 @@ public class SimpleLoginServer {
             }
         }
 
-        private boolean speichereBestand(int kaffee, int milch, int eier, int mehl) {
+        private boolean speichereBestand(int kaffee, int milch, int eier, int mehl, String kommentar) {
             String url = "jdbc:mysql://localhost:3306/lagerbestand?useSSL=false";
             String dbUser = "javauser";
             String dbPass = "passwort123";
 
             try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
                 PreparedStatement stmt = conn.prepareStatement(
-                    "INSERT INTO bestand (kaffee, milch, eier, mehl) VALUES (?, ?, ?, ?)"
+                    "INSERT INTO bestand (kaffee, milch, eier, mehl, kommentar) VALUES (?, ?, ?, ?, ?)"
                 );
                 stmt.setInt(1, kaffee);
                 stmt.setInt(2, milch);
                 stmt.setInt(3, eier);
                 stmt.setInt(4, mehl);
+                stmt.setString(5, kommentar);
                 stmt.executeUpdate();
                 return true;
             } catch (SQLException e) {
@@ -597,4 +626,49 @@ public class SimpleLoginServer {
             e.printStackTrace();
         }
     }
+
+
+    static class BestandHistorieHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+
+            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(405, -1);
+                return;
+            }
+
+            String url = "jdbc:mysql://localhost:3306/lagerbestand?useSSL=false";
+            String dbUser = "javauser";
+            String dbPass = "passwort123";
+
+            try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("SELECT * FROM bestand ORDER BY gespeichert_am DESC");
+
+                JsonArray array = new JsonArray();
+                while (rs.next()) {
+                    JsonObject obj = new JsonObject();
+                    obj.addProperty("gespeichert_am", rs.getString("gespeichert_am"));
+                    obj.addProperty("kaffee", rs.getInt("kaffee"));
+                    obj.addProperty("milch", rs.getInt("milch"));
+                    obj.addProperty("eier", rs.getInt("eier"));
+                    obj.addProperty("mehl", rs.getInt("mehl"));
+                    obj.addProperty("kommentar", rs.getString("kommentar"));
+                    array.add(obj);
+                }
+
+                String response = new Gson().toJson(array);
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length());
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                exchange.sendResponseHeaders(500, -1);
+            }
+        }
     }
+
+}

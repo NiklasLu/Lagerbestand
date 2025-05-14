@@ -76,6 +76,12 @@
         <td><input type="number" id="eier" min="0"></td>
         <td><input type="number" id="mehl" min="0"></td>
     </tr>
+    <tr>
+        <td colspan="4">
+            <label for="kommentar"><strong>Grund für die Anpassung:</strong></label><br>
+            <input type="text" id="kommentar" placeholder="z. B. Lieferung kam verspätet" required>
+        </td>
+    </tr>
     </tbody>
 </table>
 
@@ -121,11 +127,18 @@
 
     // Bestand speichern
     function bestandSpeichern() {
+        const kommentar = document.getElementById("kommentar").value.trim();
+        if (!kommentar) {
+            alert("❗ Bitte gib einen Grund für die Bestandsanpassung an.");
+            return;
+        }
+
         const daten = {
             kaffee: parseInt(document.getElementById("kaffee").value) || 0,
             milch: parseInt(document.getElementById("milch").value) || 0,
             eier: parseInt(document.getElementById("eier").value) || 0,
-            mehl: parseInt(document.getElementById("mehl").value) || 0
+            mehl: parseInt(document.getElementById("mehl").value) || 0,
+            kommentar: kommentar
         };
 
         fetch("http://localhost:3000/bestand", {
@@ -179,7 +192,7 @@
             .then(data => {
                 if (data.success) {
                     alert("✅ Benutzer angelegt.");
-                    location.reload(); // Liste neu laden
+                    location.reload();
                 } else {
                     alert("❌ Fehler beim Anlegen.");
                 }
