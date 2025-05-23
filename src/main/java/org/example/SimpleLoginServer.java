@@ -19,13 +19,14 @@ public class SimpleLoginServer {
         server.setExecutor(null);
         server.start();
         server.createContext("/pruefen", new PruefHandler());
-        server.createContext("/abweichungen", new AbweichungHandler());
+        //server.createContext("/abweichungen", new AbweichungHandler());
         server.createContext("/abweichungen/clear", new AbweichungClearHandler());
         server.createContext("/abweichung/korrigieren", new AbweichungKorrigierenHandler());
         server.createContext("/benutzer", new BenutzerHandler());
         server.createContext("/benutzer/anlegen", new BenutzerAnlegenHandler());
         server.createContext("/historie.html", new HtmlSeitenHandler("src/main/java/org/example/Bestands-Historie.html"));
         server.createContext("/bestand/historie", new BestandHistorieHandler());
+        server.createContext("/abweichungen", new AbweichungHandler());
         File file = new File("abweichungen.txt");
         if (file.exists()) {
             System.out.println("⚠️ Es liegen möglicherweise Abweichungen zur Prüfung vor (siehe abweichungen.txt)");
@@ -670,5 +671,7 @@ public class SimpleLoginServer {
             }
         }
     }
+
+
 
 }

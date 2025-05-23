@@ -82,10 +82,30 @@
             <input type="text" id="kommentar" placeholder="z. B. Lieferung kam verspätet" required>
         </td>
     </tr>
+
+
+
+    <h2>Gemeldete Abweichungen</h2>
+    <table id="abweichungstabelle">
+        <thead>
+        <tr>
+            <th>Zeit</th>
+            <th>Kaffee</th>
+            <th>Milch</th>
+            <th>Eier</th>
+            <th>Mehl</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Abweichungen werden per JS geladen -->
+        </tbody>
+
+        <button onclick="bestandSpeichern()">Bestand speichern</button>
+    </table>
+
     </tbody>
 </table>
 
-<button onclick="bestandSpeichern()">Bestand speichern</button>
 
 <h2>Benutzerliste</h2>
 <table id="benutzertabelle">
@@ -202,6 +222,27 @@
                 alert("❌ Serverfehler beim Anlegen.");
             });
     }
+
+    // Gemeldete Abweichungen laden
+    fetch("http://localhost:3000/abweichungen")
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.querySelector("#abweichungstabelle tbody");
+            data.forEach(eintrag => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                <td>${eintrag.zeit}</td>
+                <td>${eintrag.kaffee}</td>
+                <td>${eintrag.milch}</td>
+                <td>${eintrag.eier}</td>
+                <td>${eintrag.mehl}</td>
+            `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(err => {
+            console.error("Fehler beim Laden der Abweichungen:", err);
+        });
 </script>
 
 </body>
