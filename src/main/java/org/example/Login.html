@@ -63,6 +63,20 @@
             background-color: #666666;
             transform: scale(1.05);
         }
+
+        .btn-registrieren {
+            background-color: white;
+            color: #666;
+            border: 1px solid #ccc;
+            padding: 10px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-registrieren:hover {
+            background-color: #f2f2f2;
+        }
+
     </style>
 </head>
 <body>
@@ -74,7 +88,11 @@
         <input type="password" id="password" placeholder="Passwort" required>
         <button type="submit">Login</button>
     </form>
+
+    <button onclick="window.location.href='registrieren.html'" class="btn-registrieren">Registrieren</button>
 </div>
+
+
 
 <script>
     function login(event) {
