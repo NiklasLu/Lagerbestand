@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Registrieren</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 400px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-top: 1rem;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 0.5rem;
+            margin-top: 0.3rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 2rem;
+            padding: 0.7rem;
+            font-size: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #388E3C;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Benutzer registrieren</h2>
+    <form onsubmit="registrieren(event)">
+        <label for="vorname">Vorname:</label>
+        <input type="text" id="vorname" required>
+
+        <label for="nachname">Nachname:</label>
+        <input type="text" id="nachname" required>
+
+        <label for="name">Benutzername:</label>
+        <input type="text" id="name" required>
+
+        <label for="passwort">Passwort:</label>
+        <input type="password" id="passwort" required>
+
+        <button type="submit">Registrieren</button>
+    </form>
+</div>
+
+<script>
+    function registrieren(event) {
+        event.preventDefault();
+        const vorname = document.getElementById("vorname").value;
+        const nachname = document.getElementById("nachname").value;
+        const name = document.getElementById("name").value;
+        const passwort = document.getElementById("passwort").value;
+
+        fetch("http://localhost:3000/benutzer/anlegen", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ vorname, nachname, name, passwort })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ Registrierung erfolgreich!");
+                    window.location.href = "Login.html";
+                } else {
+                    alert("❌ Fehler bei der Registrierung.");
+                }
+            })
+            .catch(error => {
+                console.error("Fehler:", error);
+                alert("❌ Serverfehler.");
+            });
+    }
+</script>
+
+</body>
+</html>

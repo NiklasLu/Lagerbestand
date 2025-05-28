@@ -120,7 +120,9 @@
     <thead>
     <tr>
         <th>ID</th>
-        <th>Name</th>
+        <th>Benutzername</th>
+        <th>Vorname</th>
+        <th>Nachname</th>
     </tr>
     </thead>
     <tbody>
@@ -195,7 +197,7 @@
             const tbody = document.querySelector("#benutzertabelle tbody");
             data.forEach(user => {
                 const row = document.createElement("tr");
-                row.innerHTML = `<td>${user.id}</td><td>${user.name}</td>`;
+                row.innerHTML = `<td>${user.id}</td><td>${user.name}</td><td>${user.vorname || ""}</td><td>${user.nachname || ""}</td>`;
                 tbody.appendChild(row);
             });
         })
