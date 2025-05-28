@@ -6,6 +6,14 @@
   <title>Bestand zählen</title>
   <style>
     body {
+
+      //Logout
+    <div style="position: absolute; top: 20px; right: 20px;">
+    <button onclick="logout()" style="background-color: #d9534f; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer;">
+    Logout
+    </button>
+    </div>
+
       font-family: Arial, sans-serif;
       background-color: #f4f4f4;
       display: flex;
@@ -91,6 +99,12 @@
             })
             .catch(err => console.error("Fehler:", err));
   }
+
+  //Logout
+  function logout() {
+    window.location.href = "Login.html"; // Leitet zurück zur Login-Seite
+  }
+
 </script>
 
 </body>

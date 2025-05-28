@@ -10,3 +10,7 @@ Gezählt:  Kaffee=6, Milch=3, Eier=3, Mehl=4
 Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
 Gezählt:  Kaffee=7, Milch=3, Eier=7, Mehl=2
 -----------------------------------------------------
+❌ Abweichung festgestellt am Wed May 28 15:27:06 CEST 2025
+Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
+Gezählt:  Kaffee=4, Milch=3, Eier=2, Mehl=1
+-----------------------------------------------------
