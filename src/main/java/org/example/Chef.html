@@ -119,7 +119,7 @@
 <table id="benutzertabelle">
     <thead>
     <tr>
-        <th>ID</th>
+        <th>Nr.</th>
         <th>Benutzername</th>
         <th>Vorname</th>
         <th>Nachname</th>
@@ -191,13 +191,20 @@
     }
 
     // Benutzerliste laden
+    // Benutzerliste laden mit laufender Nummer
     fetch("http://localhost:3000/benutzer")
         .then(res => res.json())
         .then(data => {
             const tbody = document.querySelector("#benutzertabelle tbody");
+            let index = 1;
             data.forEach(user => {
                 const row = document.createElement("tr");
-                row.innerHTML = `<td>${user.id}</td><td>${user.name}</td><td>${user.vorname || ""}</td><td>${user.nachname || ""}</td>`;
+                row.innerHTML = `
+                <td>${index++}</td>
+                <td>${user.name}</td>
+                <td>${user.vorname || ""}</td>
+                <td>${user.nachname || ""}</td>
+            `;
                 tbody.appendChild(row);
             });
         })
