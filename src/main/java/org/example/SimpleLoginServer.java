@@ -623,6 +623,16 @@ public class SimpleLoginServer {
                         array.add(user);
                     }
 
+//                    JsonArray array = new JsonArray();
+//                    while (rs.next()) {
+//                        JsonObject user = new JsonObject();
+//                        user.addProperty("id", rs.getInt("id"));
+//                        user.addProperty("name", rs.getString("name"));
+//                        user.addProperty("vorname", rs.getString("vorname"));
+//                        user.addProperty("nachname", rs.getString("nachname"));
+//                        array.add(user);
+//                    }
+
                     String response = new Gson().toJson(array);
                     exchange.getResponseHeaders().set("Content-Type", "application/json");
                     exchange.sendResponseHeaders(200, response.length());

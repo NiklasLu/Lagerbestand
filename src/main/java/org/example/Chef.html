@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <title>Chefansicht – Lager & Benutzer</title>
     <style>
+
+        td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
         body {
             font-family: Arial, sans-serif;
             padding: 2rem;
@@ -54,6 +60,38 @@
             max-width: 400px;
             margin: 2rem auto;
         }
+
+        td button {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+            border: none;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        td button:hover {
+            background-color: #c0392b;
+        }
+        td {
+            text-align: center;
+        }
+
+        .loesch-button {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+            border: none;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: auto; /* ← stellt sicher, dass der Button in der Zelle mittig sitzt */
+        }
+
+        .loesch-button:hover {
+            background-color: #c0392b;
+        }
+
     </style>
 </head>
 <body>
@@ -119,10 +157,10 @@
 <table id="benutzertabelle">
     <thead>
     <tr>
-        <th>Nr.</th>
-        <th>Benutzername</th>
+        <th>ID</th>
         <th>Vorname</th>
         <th>Nachname</th>
+        <th>Benutzername</th>
         <th>Aktion</th>
     </tr>
     </thead>
@@ -142,7 +180,7 @@
     <button type="submit">Benutzer erstellen</button>
 </form>
 
-<script>
+<>
     // Lagerbestand laden
     fetch("http://localhost:3000/bestand")
         .then(res => res.json())
@@ -174,7 +212,7 @@
 
         fetch("http://localhost:3000/bestand", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type": "application/json"},
             body: JSON.stringify(daten)
         })
             .then(res => res.json())
@@ -191,52 +229,57 @@
             });
     }
 
-    // Benutzerliste laden
-    // Benutzerliste laden mit laufender Nummer
-    fetch("http://localhost:3000/benutzer")
-        .then(res => res.json())
-        .then(data => {
-            const tbody = document.querySelector("#benutzertabelle tbody");
-            let index = 1;
-            tbody.innerHTML = ""; // leeren vor erneutem Einfügen
-            data.forEach(user => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                <td>${index++}</td>
-                <td>${user.name}</td>
-                <td>${user.vorname || ""}</td>
-                <td>${user.nachname || ""}</td>
-                <td>
-                    <button onclick="benutzerLoeschen(${user.id})" style="background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Löschen</button>
-                </td>
-            `;
-                tbody.appendChild(row);
-            });
-        })
+    <script>
+        // Benutzerliste laden
+        fetch("http://localhost:3000/benutzer")
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector("#benutzertabelle tbody");
+                data.forEach((user, index) => {
+                    const row = document.createElement("tr");
+                        row.innerHTML = `
+                                    <td>${index + 1}</td>
+                                    <td>${user.vorname || ""}</td>
+                                    <td>${user.nachname || ""}</td>
+                                    <td>${user.name}</td>
+                                    <td>
+                                        <button class="loesch-button" onclick="benutzerLoeschen(${user.id})">🗑️ Löschen</button>
+                                    </td>
+                `;
+        tbody.appendChild(row);
+    });
+    })
         .catch(err => {
-            console.error("Fehler beim Laden der Benutzerliste:", err);
-        });
+        console.error("Fehler beim Laden der Benutzerliste:", err);
+    });
 
-    // Benutzer löschen
-    function benutzerLoeschen(id) {
+        // Benutzer löschen
+        function benutzerLoeschen(id) {
         if (!confirm("❗ Soll dieser Benutzer wirklich gelöscht werden?")) return;
 
         fetch(`http://localhost:3000/benutzer/loeschen?id=${id}`, {
-            method: "DELETE"
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert("🗑️ Benutzer erfolgreich gelöscht.");
-                    location.reload(); // Liste neu laden
-                } else {
-                    alert("❌ Fehler beim Löschen.");
-                }
-            })
-            .catch(err => {
-                console.error("Fehler beim Löschen:", err);
-                alert("❌ Serverfehler beim Löschen.");
-            });
+        method: "DELETE"
+    })
+        .then(res => res.json())
+        .then(data => {
+        if (data.success) {
+        alert("🗑️ Benutzer erfolgreich gelöscht.");
+        location.reload(); // Liste neu laden
+    } else {
+        alert("❌ Fehler beim Löschen.");
+    }
+    })
+        .catch(err => {
+        console.error("Fehler beim Löschen:", err);
+        alert("❌ Serverfehler beim Löschen.");
+    });
+    }
+
+        // Logout
+        function logout() {
+        window.location.href = "Login.html";
+    }
+
 
         // Benutzer anlegen
         function benutzerAnlegen(event) {
@@ -291,8 +334,41 @@
         function logout() {
 
             window.location.href = "Login.html"; // Leitet zurück zur Login-Seite
-        }
     }
+
+
+    //loesch Button
+    const row = document.createElement("tr");
+
+    const idCell = document.createElement("td");
+    idCell.textContent = user.id;
+
+    const nameCell = document.createElement("td");
+    nameCell.textContent = user.name;
+
+    const actionCell = document.createElement("td");
+    actionCell.style.display = "flex";
+    actionCell.style.justifyContent = "center";
+    actionCell.style.alignItems = "center"; // ← für vertikale Zentrierung
+
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "🗑️ Löschen";
+    deleteButton.className = "loesch-button";
+    deleteButton.onclick = () => benutzerLoeschen(user.id);
+
+    actionCell.appendChild(deleteButton);
+
+    row.appendChild(idCell);
+    row.appendChild(nameCell);
+    row.appendChild(actionCell);
+    tbody.appendChild(row);
+
+
+    //Logout
+        function logout() {
+        window.location.href = "Login.html"; // Pfad ggf. anpassen
+    }
+
 
 </script>
 
