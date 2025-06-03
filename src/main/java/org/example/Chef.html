@@ -123,6 +123,7 @@
         <th>Benutzername</th>
         <th>Vorname</th>
         <th>Nachname</th>
+        <th>Aktion</th>
     </tr>
     </thead>
     <tbody>
@@ -197,6 +198,7 @@
         .then(data => {
             const tbody = document.querySelector("#benutzertabelle tbody");
             let index = 1;
+            tbody.innerHTML = ""; // leeren vor erneutem Einfügen
             data.forEach(user => {
                 const row = document.createElement("tr");
                 row.innerHTML = `
@@ -204,6 +206,9 @@
                 <td>${user.name}</td>
                 <td>${user.vorname || ""}</td>
                 <td>${user.nachname || ""}</td>
+                <td>
+                    <button onclick="benutzerLoeschen(${user.id})" style="background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Löschen</button>
+                </td>
             `;
                 tbody.appendChild(row);
             });
@@ -212,59 +217,81 @@
             console.error("Fehler beim Laden der Benutzerliste:", err);
         });
 
-    // Benutzer anlegen
-    function benutzerAnlegen(event) {
-        event.preventDefault();
-        const name = document.getElementById("benutzername").value;
-        const passwort = document.getElementById("passwort").value;
+    // Benutzer löschen
+    function benutzerLoeschen(id) {
+        if (!confirm("❗ Soll dieser Benutzer wirklich gelöscht werden?")) return;
 
-        fetch("http://localhost:3000/benutzer/anlegen", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ name, passwort })
+        fetch(`http://localhost:3000/benutzer/loeschen?id=${id}`, {
+            method: "DELETE"
         })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert("✅ Benutzer angelegt.");
-                    location.reload();
+                    alert("🗑️ Benutzer erfolgreich gelöscht.");
+                    location.reload(); // Liste neu laden
                 } else {
-                    alert("❌ Fehler beim Anlegen.");
+                    alert("❌ Fehler beim Löschen.");
                 }
             })
             .catch(err => {
-                console.error("Fehler beim Anlegen:", err);
-                alert("❌ Serverfehler beim Anlegen.");
+                console.error("Fehler beim Löschen:", err);
+                alert("❌ Serverfehler beim Löschen.");
             });
-    }
 
-    // Gemeldete Abweichungen laden
-    fetch("http://localhost:3000/abweichungen")
-        .then(res => res.json())
-        .then(data => {
-            const tbody = document.querySelector("#abweichungstabelle tbody");
-            data.forEach(eintrag => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
+        // Benutzer anlegen
+        function benutzerAnlegen(event) {
+            event.preventDefault();
+            const name = document.getElementById("benutzername").value;
+            const passwort = document.getElementById("passwort").value;
+
+            fetch("http://localhost:3000/benutzer/anlegen", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({name, passwort})
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("✅ Benutzer angelegt.");
+                        location.reload();
+                    } else {
+                        alert("❌ Fehler beim Anlegen.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Fehler beim Anlegen:", err);
+                    alert("❌ Serverfehler beim Anlegen.");
+                });
+        }
+
+        // Gemeldete Abweichungen laden
+        fetch("http://localhost:3000/abweichungen")
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector("#abweichungstabelle tbody");
+                data.forEach(eintrag => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
                 <td>${eintrag.zeit}</td>
                 <td>${eintrag.kaffee}</td>
                 <td>${eintrag.milch}</td>
                 <td>${eintrag.eier}</td>
                 <td>${eintrag.mehl}</td>
             `;
-                tbody.appendChild(row);
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(err => {
+                console.error("Fehler beim Laden der Abweichungen:", err);
             });
-        })
-        .catch(err => {
-            console.error("Fehler beim Laden der Abweichungen:", err);
-        });
 
-    //Logout
-    function logout() {
+        //Logout
+        function logout() {
 
-        window.location.href = "Login.html"; // Leitet zurück zur Login-Seite
+            window.location.href = "Login.html"; // Leitet zurück zur Login-Seite
+        }
     }
 
 </script>

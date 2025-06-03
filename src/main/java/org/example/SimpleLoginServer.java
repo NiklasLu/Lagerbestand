@@ -29,11 +29,59 @@ public class SimpleLoginServer {
         server.createContext("/abweichungen", new AbweichungHandler());
         server.createContext("/registrierung.html", new HtmlSeitenHandler("src/main/java/org" +
             "/example/registrieren.html"));
+        server.createContext("/benutzer/loeschen", new BenutzerLoeschenHandler());
         File file = new File("abweichungen.txt");
         if (file.exists()) {
             System.out.println("⚠️ Es liegen möglicherweise Abweichungen zur Prüfung vor (siehe abweichungen.txt)");
         }
         System.out.println("✅ Server läuft auf http://localhost:3000");
+    }
+
+
+    static class BenutzerLoeschenHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "DELETE, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("DELETE".equalsIgnoreCase(exchange.getRequestMethod())) {
+                String query = exchange.getRequestURI().getQuery(); // z.B. ?id=3
+                if (query == null || !query.contains("id=")) {
+                    exchange.sendResponseHeaders(400, -1);
+                    return;
+                }
+
+                int id = Integer.parseInt(query.split("=")[1]);
+
+                String url = "jdbc:mysql://localhost:3306/lagerbestand?useSSL=false";
+                String dbUser = "javauser";
+                String dbPass = "passwort123";
+
+                try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
+                    PreparedStatement stmt = conn.prepareStatement("DELETE FROM benutzer WHERE id = ?");
+                    stmt.setInt(1, id);
+                    int deleted = stmt.executeUpdate();
+
+                    String response = "{\"success\": " + (deleted > 0) + "}";
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, response.length());
+                    exchange.getResponseBody().write(response.getBytes());
+                    exchange.getResponseBody().close();
+
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    exchange.sendResponseHeaders(500, -1);
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
     }
 
     static class HtmlSeitenHandler implements HttpHandler {
