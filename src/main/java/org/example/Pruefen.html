@@ -81,13 +81,20 @@
 
 <button onclick="pruefen()">Bestände prüfen</button>
 
+<label for="kommentar">Kommentar (optional):</label><br>
+<textarea id="kommentar" rows="3" cols="30" placeholder="Kommentar zur Prüfung..."></textarea><br><br>
+
 <script>
+
+
   function pruefen() {
+    const kommentar = document.getElementById("kommentar").value.trim();
     const daten = {
       kaffee: parseInt(document.getElementById('kaffee').value) || 0,
       milch: parseInt(document.getElementById('milch').value) || 0,
       eier: parseInt(document.getElementById('eier').value) || 0,
-      mehl: parseInt(document.getElementById('mehl').value) || 0
+      mehl: parseInt(document.getElementById('mehl').value) || 0,
+      kommentar: kommentar
     };
 
     fetch("http://localhost:3000/pruefen", {

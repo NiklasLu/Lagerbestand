@@ -30,12 +30,115 @@ public class SimpleLoginServer {
         server.createContext("/registrierung.html", new HtmlSeitenHandler("src/main/java/org" +
             "/example/registrieren.html"));
         server.createContext("/benutzer/loeschen", new BenutzerLoeschenHandler());
+        server.createContext("/zutaten", new ZutatenHandler());
+        server.createContext("/zutat/hinzufuegen", new ZutatHinzufuegenHandler());
         File file = new File("abweichungen.txt");
         if (file.exists()) {
             System.out.println("⚠️ Es liegen möglicherweise Abweichungen zur Prüfung vor (siehe abweichungen.txt)");
         }
         System.out.println("✅ Server läuft auf http://localhost:3000");
     }
+
+
+    //Zutaten hinzufügen
+    static class ZutatHinzufuegenHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "utf-8"));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+                String name = JsonParser.parseString(sb.toString()).getAsJsonObject().get("name").getAsString();
+
+                String url = "jdbc:mysql://localhost:3306/lagerbestand?useSSL=false";
+                String dbUser = "javauser";
+                String dbPass = "passwort123";
+
+                try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
+                    PreparedStatement stmt = conn.prepareStatement("INSERT IGNORE INTO zutaten (name) VALUES (?)");
+                    stmt.setString(1, name.toLowerCase());
+                    stmt.executeUpdate();
+
+                    String response = "{\"success\": true}";
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, response.length());
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(response.getBytes());
+                    }
+
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    String response = "{\"success\": false}";
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(500, response.length());
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(response.getBytes());
+                    }
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+
+
+
+    //Zutaten handler
+    static class ZutatenHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                String url = "jdbc:mysql://localhost:3306/lagerbestand?useSSL=false";
+                String dbUser = "javauser";
+                String dbPass = "passwort123";
+
+                try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
+                    Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery("SELECT name FROM zutaten ORDER BY id ASC");
+
+                    JsonArray array = new JsonArray();
+                    while (rs.next()) {
+                        array.add(rs.getString("name"));
+                    }
+
+                    String response = array.toString();
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, response.length());
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(response.getBytes());
+                    }
+
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    exchange.sendResponseHeaders(500, -1);
+                }
+            } else {
+                exchange.sendResponseHeaders(405, -1);
+            }
+        }
+    }
+
 
 
     static class BenutzerLoeschenHandler implements HttpHandler {
@@ -203,11 +306,14 @@ public class SimpleLoginServer {
                 int milch = json.get("milch").getAsInt();
                 int eier = json.get("eier").getAsInt();
                 int mehl = json.get("mehl").getAsInt();
+                String kommentar = json.has("kommentar") ? json.get("kommentar").getAsString() : "";
+
 
                 // Letzten Original-Bestand holen
                 String url = "jdbc:mysql://localhost:3306/lagerbestand?useSSL=false";
                 String dbUser = "javauser";
                 String dbPass = "passwort123";
+
 
                 try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
                     Statement stmt = conn.createStatement();
@@ -251,6 +357,7 @@ public class SimpleLoginServer {
                                 out.println("❌ Abweichung festgestellt am " + new java.util.Date());
                                 out.println("Original: Kaffee=" + rs.getInt("kaffee") + ", Milch=" + rs.getInt("milch") + ", Eier=" + rs.getInt("eier") + ", Mehl=" + rs.getInt("mehl"));
                                 out.println("Gezählt:  Kaffee=" + kaffee + ", Milch=" + milch + ", Eier=" + eier + ", Mehl=" + mehl);
+                                out.println("Kommentar: " + kommentar);
                                 out.println("-----------------------------------------------------");
                             } catch (IOException e) {
                                 e.printStackTrace();
