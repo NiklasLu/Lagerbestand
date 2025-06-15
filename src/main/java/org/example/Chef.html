@@ -2,27 +2,21 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Chefansicht – Lager & Benutzer</title>
+    <title>Chefansicht</title>
     <style>
-
-        td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
         body {
             font-family: Arial, sans-serif;
             padding: 2rem;
             background-color: #f4f4f4;
         }
-        h1, h2 {
+        h1, h2, h3 {
             text-align: center;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
-            margin-top: 2rem;
+            margin-top: 1rem;
+            background: #fff;
         }
         th, td {
             padding: 0.8rem;
@@ -32,352 +26,319 @@
         th {
             background-color: #eee;
         }
-        input[type="number"], input[type="text"], input[type="password"] {
-            width: 80%;
-            padding: 0.5rem;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+        input, button {
+            padding: 0.4rem;
+            margin: 0.2rem;
         }
-        button {
-            margin-top: 1.5rem;
-            padding: 0.6rem 1.2rem;
-            font-size: 1rem;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+        textarea {
+            width: 100%;
+            margin-top: 0.5rem;
         }
-        button:hover {
-            background-color: #388E3C;
+        .logout {
+            position: absolute;
+            top: 20px;
+            right: 20px;
         }
-        form {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 10px;
-            box-shadow: 0 0 5px rgba(0,0,0,0.1);
-            max-width: 400px;
-            margin: 2rem auto;
-        }
-
-        td button {
-            padding: 0.4rem 0.8rem;
-            font-size: 0.9rem;
-            border: none;
-            background-color: #e74c3c;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        td button:hover {
-            background-color: #c0392b;
-        }
-        td {
-            text-align: center;
-        }
-
-        .loesch-button {
-            padding: 0.4rem 0.8rem;
-            font-size: 0.9rem;
-            border: none;
-            background-color: #e74c3c;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: auto; /* ← stellt sicher, dass der Button in der Zelle mittig sitzt */
-        }
-
-        .loesch-button:hover {
-            background-color: #c0392b;
-        }
-
     </style>
 </head>
 <body>
 
-<h1>Aktuellen Lagerbestand bearbeiten</h1>
+<div class="logout">
+    <button onclick="window.location.href='Login.html'">Logout</button>
+</div>
 
-<table>
+<h1>Chefansicht</h1>
+
+<h2>Produkt anlegen</h2>
+<form onsubmit="produktHinzufuegen(event)">
+    <input type="text" id="produktname" placeholder="Produktname" required>
+    <input type="number" id="kapazitaet" placeholder="Max. Lagerkapazität" required>
+    <button type="submit">Hinzufügen</button>
+</form>
+
+<h2>Produkte</h2>
+<table id="produktTabelle">
+    <thead>
+    <tr><th>Produkt</th><th>Max. Bestand</th><th>Löschen</th></tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<h2>Rezepte verwalten</h2>
+<form onsubmit="rezeptHinzufuegen(event)">
+    <input type="text" id="rezeptProdukt" placeholder="Produktname (z.B. Latte)" required>
+    <input type="text" id="rezeptZutat" placeholder="Zutat (z.B. milch)" required>
+    <input type="number" id="rezeptMenge" placeholder="Menge pro Stück" step="0.01" required>
+    <button type="submit">Rezept hinzufügen</button>
+</form>
+
+<table id="rezepteTabelle">
     <thead>
     <tr>
-        <th>Kaffee</th>
-        <th>Milch</th>
-        <th>Eier</th>
-        <th>Mehl</th>
+        <th>Produkt</th>
+        <th>Zutat</th>
+        <th>Menge pro Stück</th>
+        <th>Aktionen</th>
     </tr>
     </thead>
-    <tbody>
-    <tr>
-        <td><input type="number" id="kaffee" min="0"></td>
-        <td><input type="number" id="milch" min="0"></td>
-        <td><input type="number" id="eier" min="0"></td>
-        <td><input type="number" id="mehl" min="0"></td>
-    </tr>
-    <tr>
-        <td colspan="4">
-            <label for="kommentar"><strong>Grund für die Anpassung:</strong></label><br>
-            <input type="text" id="kommentar" placeholder="z. B. Lieferung kam verspätet" required>
-        </td>
-    </tr>
-
-
-    <h2>Gemeldete Abweichungen</h2>
-    <table id="abweichungstabelle">
-        <thead>
-        <tr>
-            <th>Zeit</th>
-            <th>Kaffee</th>
-            <th>Milch</th>
-            <th>Eier</th>
-            <th>Mehl</th>
-        </tr>
-        </thead>
-        <tbody>
-
-
-        <div style="position: absolute; top: 20px; right: 20px;">
-            <button onclick="logout()" style="background-color: #d9534f; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer;">
-                Logout
-            </button>
-        </div>
-
-        <!-- Abweichungen werden per JS geladen -->
-        </tbody>
-
-        <button onclick="bestandSpeichern()">Bestand speichern</button>
-    </table>
-
-    </tbody>
+    <tbody></tbody>
 </table>
 
 
-<h2>Neue Zutat hinzufügen</h2>
-<form onsubmit="zutatHinzufuegen(event)" id="zutatForm">
-    <input type="text" id="neueZutat" placeholder="Zutat (z.B. Zucker)" required>
-    <button type="submit">➕ Hinzufügen</button>
+
+<h2>Kasse</h2>
+<button onclick="kasseAbrufen()" style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+    Kasse abrufen & Lagerbestand aktualisieren
+</button>
+
+
+
+<h2>Bestand aktualisieren</h2>
+<form onsubmit="bestandSpeichern(event)">
+    <div id="bestandInputs"></div>
+    <label for="kommentar">Kommentar:</label><br>
+    <textarea id="kommentar" rows="3"></textarea><br>
+    <button type="submit">Bestand speichern</button>
 </form>
 
+<h2>Kasse abrufen</h2>
+<button onclick="verkaufsDatenAbrufen()">Verkäufe anzeigen</button>
+<div id="verkaufsdaten"></div>
 
+<script>
 
-<h2>Benutzerliste</h2>
-<table id="benutzertabelle">
-    <thead>
-    <tr>
-        <th>ID</th>
-        <th>Vorname</th>
-        <th>Nachname</th>
-        <th>Benutzername</th>
-        <th>Aktion</th>
-    </tr>
-    </thead>
-    <tbody>
-    <!-- JS füllt Benutzerliste -->
-    </tbody>
-</table>
+    function ladeRezepte() {
+        fetch("http://localhost:3000/rezepte")
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.querySelector("#rezepteTabelle tbody");
+                tbody.innerHTML = "";
+                data.forEach(e => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                    <td><input type="text" value="${e.produkt}" onchange="rezeptEditieren(${e.id}, 'produkt', this.value)"></td>
+                    <td><input type="text" value="${e.zutat}" onchange="rezeptEditieren(${e.id}, 'zutat', this.value)"></td>
+                    <td><input type="number" step="0.01" value="${e.menge}" onchange="rezeptEditieren(${e.id}, 'menge', this.value)"></td>
+                    <td><button onclick="rezeptLoeschen(${e.id})">🗑️</button></td>
+                `;
+                    tbody.appendChild(row);
+                });
+            });
+    }
 
-<h2>Neuen Benutzer anlegen</h2>
-<form onsubmit="benutzerAnlegen(event)">
-    <label for="benutzername">Benutzername:</label><br>
-    <input type="text" id="benutzername" required><br><br>
+    function rezeptHinzufuegen(event) {
+        event.preventDefault();
+        const produkt = document.getElementById("rezeptProdukt").value;
+        const zutat = document.getElementById("rezeptZutat").value;
+        const menge = parseFloat(document.getElementById("rezeptMenge").value);
 
-    <label for="passwort">Passwort:</label><br>
-    <input type="password" id="passwort" required><br><br>
-
-    <button type="submit">Benutzer erstellen</button>
-</form>
-
-<>
-    // Lagerbestand laden
-    fetch("http://localhost:3000/bestand")
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById("kaffee").value = data.kaffee;
-            document.getElementById("milch").value = data.milch;
-            document.getElementById("eier").value = data.eier;
-            document.getElementById("mehl").value = data.mehl;
-        })
-        .catch(err => {
-            console.error("Fehler beim Laden des Lagerbestands:", err);
-        });
-
-    // Bestand speichern
-    function bestandSpeichern() {
-        const kommentar = document.getElementById("kommentar").value.trim();
-        if (!kommentar) {
-            alert("❗ Bitte gib einen Grund für die Bestandsanpassung an.");
-            return;
-        }
-
-        const daten = {
-            kaffee: parseInt(document.getElementById("kaffee").value) || 0,
-            milch: parseInt(document.getElementById("milch").value) || 0,
-            eier: parseInt(document.getElementById("eier").value) || 0,
-            mehl: parseInt(document.getElementById("mehl").value) || 0,
-            kommentar: kommentar
-        };
-
-        fetch("http://localhost:3000/bestand", {
+        fetch("http://localhost:3000/rezepte/hinzufuegen", {
             method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(daten)
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ produkt, zutat, menge })
         })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert("✅ Bestand gespeichert.");
+                    alert("✅ Rezept gespeichert!");
+                    ladeRezepte(); // nur falls diese Funktion definiert ist
+                    event.target.reset();
                 } else {
-                    alert("❌ Fehler beim Speichern.");
+                    alert("❌ Fehler beim Hinzufügen des Rezepts.");
                 }
             })
             .catch(err => {
-                console.error("Fehler beim Speichern:", err);
+                console.error("Fehler beim Rezept-Senden:", err);
                 alert("❌ Serverfehler beim Speichern.");
             });
     }
 
-    <script>
-        // Benutzerliste laden
-        fetch("http://localhost:3000/benutzer")
+    function rezeptLoeschen(id) {
+        if (!confirm("Rezept wirklich löschen?")) return;
+        fetch(`http://localhost:3000/rezepte/loeschen?id=${id}`, {
+            method: "DELETE"
+        }).then(res => res.json()).then(data => {
+            if (data.success) ladeRezepte();
+            else alert("❌ Fehler beim Löschen.");
+        });
+    }
+
+    function rezeptEditieren(id, feld, wert) {
+        fetch("http://localhost:3000/rezepte/aktualisieren", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, feld, wert })
+        }).then(res => res.json()).then(data => {
+            if (!data.success) alert("❌ Fehler beim Aktualisieren.");
+        });
+    }
+
+    // Rezepte beim Laden der Seite abrufen
+    ladeRezepte();
+
+
+
+    function ladeRezepte() {
+        fetch("http://localhost:3000/rezepte")
             .then(res => res.json())
             .then(data => {
-                const tbody = document.querySelector("#benutzertabelle tbody");
-                data.forEach((user, index) => {
-                    const row = document.createElement("tr");
-                        row.innerHTML = `
-                                    <td>${index + 1}</td>
-                                    <td>${user.vorname || ""}</td>
-                                    <td>${user.nachname || ""}</td>
-                                    <td>${user.name}</td>
-                                    <td>
-                                        <button class="loesch-button" onclick="benutzerLoeschen(${user.id})">🗑️ Löschen</button>
-                                    </td>
-                `;
-        tbody.appendChild(row);
-    });
-    })
-        .catch(err => {
-        console.error("Fehler beim Laden der Benutzerliste:", err);
-    });
-
-        // Benutzer löschen
-        function benutzerLoeschen(id) {
-        if (!confirm("❗ Soll dieser Benutzer wirklich gelöscht werden?")) return;
-
-        fetch(`http://localhost:3000/benutzer/loeschen?id=${id}`, {
-        method: "DELETE"
-    })
-        .then(res => res.json())
-        .then(data => {
-        if (data.success) {
-        alert("🗑️ Benutzer erfolgreich gelöscht.");
-        location.reload(); // Liste neu laden
-    } else {
-        alert("❌ Fehler beim Löschen.");
-    }
-    })
-        .catch(err => {
-        console.error("Fehler beim Löschen:", err);
-        alert("❌ Serverfehler beim Löschen.");
-    });
-    }
-
-        // Logout
-        function logout() {
-        window.location.href = "Login.html";
-    }
-
-
-        // Benutzer anlegen
-        function benutzerAnlegen(event) {
-            event.preventDefault();
-            const name = document.getElementById("benutzername").value;
-            const passwort = document.getElementById("passwort").value;
-
-            fetch("http://localhost:3000/benutzer/anlegen", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({name, passwort})
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("✅ Benutzer angelegt.");
-                        location.reload();
-                    } else {
-                        alert("❌ Fehler beim Anlegen.");
-                    }
-                })
-                .catch(err => {
-                    console.error("Fehler beim Anlegen:", err);
-                    alert("❌ Serverfehler beim Anlegen.");
-                });
-        }
-
-        // Gemeldete Abweichungen laden
-        fetch("http://localhost:3000/abweichungen")
-            .then(res => res.json())
-            .then(data => {
-                const tbody = document.querySelector("#abweichungstabelle tbody");
-                data.forEach(eintrag => {
+                const tbody = document.querySelector("#rezepteTabelle tbody");
+                tbody.innerHTML = "";
+                data.forEach(r => {
                     const row = document.createElement("tr");
                     row.innerHTML = `
-                <td>${eintrag.zeit}</td>
-                <td>${eintrag.kaffee}</td>
-                <td>${eintrag.milch}</td>
-                <td>${eintrag.eier}</td>
-                <td>${eintrag.mehl}</td>
-            `;
+          <td>${r.produkt}</td>
+          <td>${r.zutat}</td>
+          <td><input type="number" step="0.01" value="${r.menge}" onchange="rezeptAktualisieren('${r.produkt}', '${r.zutat}', this.value)"></td>
+          <td><button onclick="rezeptLoeschen('${r.produkt}', '${r.zutat}')">🗑️</button></td>
+        `;
                     tbody.appendChild(row);
                 });
+            });
+    }
+
+    function rezeptAktualisieren(produkt, zutat, menge) {
+        fetch("http://localhost:3000/rezepte/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ produkt, zutat, menge: parseFloat(menge) })
+        }).then(res => res.json()).then(data => {
+            if (!data.success) alert("Fehler beim Aktualisieren.");
+        });
+    }
+
+    function rezeptLoeschen(produkt, zutat) {
+        fetch(`http://localhost:3000/rezepte/loeschen?produkt=${encodeURIComponent(produkt)}&zutat=${encodeURIComponent(zutat)}`, {
+            method: "DELETE"
+        }).then(res => res.json()).then(data => {
+            if (data.success) ladeRezepte();
+            else alert("Fehler beim Löschen.");
+        });
+    }
+
+    function rezeptHinzufuegen(event) {
+        event.preventDefault();
+        const produkt = document.getElementById("rezeptProdukt").value;
+        const zutat = document.getElementById("rezeptZutat").value;
+        const menge = parseFloat(document.getElementById("rezeptMenge").value);
+
+        fetch("http://localhost:3000/rezepte/hinzufuegen", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ produkt, zutat, menge })
+        }).then(res => res.json()).then(data => {
+            if (data.success) {
+                ladeRezepte();
+                event.target.reset();
+            } else alert("Fehler beim Hinzufügen.");
+        });
+    }
+
+    // Beim Laden starten:
+    ladeRezepte();
+
+
+
+
+    function kasseAbrufen() {
+        fetch("http://localhost:3000/kasse", {
+            method: "POST"
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ Kassenverarbeitung abgeschlossen.\n" + data.message);
+                    window.location.reload(); // Seite neu laden für aktualisierte Bestände
+                } else {
+                    alert("⚠️ Fehler bei der Kassenverarbeitung: " + (data.message || ""));
+                }
             })
             .catch(err => {
-                console.error("Fehler beim Laden der Abweichungen:", err);
+                console.error("Fehler bei Kassenabruf:", err);
+                alert("❌ Serverfehler bei der Kassenverarbeitung.");
             });
-
-        //Logout
-        function logout() {
-
-            window.location.href = "Login.html"; // Leitet zurück zur Login-Seite
     }
 
 
-    //loesch Button
-    const row = document.createElement("tr");
 
-    const idCell = document.createElement("td");
-    idCell.textContent = user.id;
-
-    const nameCell = document.createElement("td");
-    nameCell.textContent = user.name;
-
-    const actionCell = document.createElement("td");
-    actionCell.style.display = "flex";
-    actionCell.style.justifyContent = "center";
-    actionCell.style.alignItems = "center"; // ← für vertikale Zentrierung
-
-    const deleteButton = document.createElement("button");
-    deleteButton.textContent = "🗑️ Löschen";
-    deleteButton.className = "loesch-button";
-    deleteButton.onclick = () => benutzerLoeschen(user.id);
-
-    actionCell.appendChild(deleteButton);
-
-    row.appendChild(idCell);
-    row.appendChild(nameCell);
-    row.appendChild(actionCell);
-    tbody.appendChild(row);
-
-
-    //Logout
-        function logout() {
-        window.location.href = "Login.html"; // Pfad ggf. anpassen
+    function loeschen(id) {
+        fetch(`http://localhost:3000/produkt/loeschen?id=${id}`, {
+            method: "DELETE"
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ Produkt gelöscht");
+                    location.reload();
+                } else {
+                    alert("❌ Fehler beim Löschen");
+                }
+            })
+            .catch(err => {
+                console.error("Fehler beim Löschen:", err);
+                alert("❌ Serverfehler beim Löschen");
+            });
     }
 
 
+
+    function produktHinzufuegen(e) {
+        e.preventDefault();
+        const name = document.getElementById("produktname").value;
+        const max = document.getElementById("kapazitaet").value;
+        fetch("http://localhost:3000/produkte/hinzufuegen", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ name, max_kapazitaet: parseInt(max) })
+        }).then(r => r.json()).then(() => location.reload());
+    }
+
+    function produktLoeschen(id) {
+        if (!confirm("Produkt wirklich löschen?")) return;
+        fetch(`http://localhost:3000/produkte/loeschen?id=${id}`, { method: "DELETE" })
+            .then(r => r.json()).then(() => location.reload());
+    }
+
+    function bestandSpeichern(e) {
+        e.preventDefault();
+        const inputs = document.querySelectorAll(".bestandInput");
+        const daten = {};
+        inputs.forEach(inp => daten[inp.name] = parseInt(inp.value) || 0);
+        daten.kommentar = document.getElementById("kommentar").value;
+        fetch("http://localhost:3000/bestand/eintragen", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(daten)
+        }).then(r => r.json()).then(d => alert(d.success ? "Gespeichert" : "Fehler"));
+    }
+
+    function verkaufsDatenAbrufen() {
+        fetch("http://localhost:3000/verkaufte_artikel/kasse", {
+            method: "POST"
+        }).then(r => r.json()).then(data => {
+            const div = document.getElementById("verkaufsdaten");
+            div.innerHTML = "<h3>Verkäufe</h3>" + data.map(e => `<p>${e.name}: ${e.anzahl}</p>`).join("");
+        });
+    }
+
+    function ladeProdukte() {
+        fetch("http://localhost:3000/produkte")
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById("produktTabelle");
+                data.forEach(produkt => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+        <td>${produkt.name}</td>
+        <td>${produkt.max_kapazitaet}</td> <!-- ✅ richtig -->
+        <td><button onclick="loeschen(${produkt.id})">🗑️</button></td>
+      `;
+                    tbody.appendChild(row);
+                });
+            });
+    }
+
+    ladeProdukte();
 </script>
-
 </body>
 </html>

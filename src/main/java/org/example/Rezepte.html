@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Rezepte bearbeiten</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-top: 2rem;
+        }
+        th, td {
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+        th {
+            background-color: #eee;
+        }
+        input {
+            padding: 0.4rem;
+            width: 90%;
+        }
+        button {
+            padding: 0.4rem 1rem;
+            margin: 0.2rem;
+            cursor: pointer;
+        }
+        .actions {
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Rezepte verwalten</h1>
+
+<table>
+    <thead>
+    <tr>
+        <th>Produkt</th>
+        <th>Zutat</th>
+        <th>Menge pro Stück</th>
+        <th>Aktion</th>
+    </tr>
+    </thead>
+    <tbody id="rezepteBody"></tbody>
+</table>
+
+<h2>Neues Rezept hinzufügen</h2>
+<form onsubmit="rezeptHinzufuegen(event)">
+    <input type="text" id="neuesProdukt" placeholder="Produktname" required>
+    <input type="text" id="neueZutat" placeholder="Zutat" required>
+    <input type="number" step="0.01" id="neueMenge" placeholder="Menge pro Stück" required>
+    <button type="submit">➕ Hinzufügen</button>
+</form>
+
+<script>
+    // Rezepte laden
+    function ladeRezepte() {
+        fetch("http://localhost:3000/rezepte")
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById("rezepteBody");
+                tbody.innerHTML = "";
+                data.forEach(rezept => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+            <td><input value="${rezept.produkt}" onchange="aktualisieren(${rezept.id}, this.value, 'produkt')"></td>
+            <td><input value="${rezept.zutat}" onchange="aktualisieren(${rezept.id}, this.value, 'zutat')"></td>
+            <td><input type="number" step="0.01" value="${rezept.menge}" onchange="aktualisieren(${rezept.id}, this.value, 'menge')"></td>
+            <td class="actions">
+              <button onclick="rezeptLoeschen(${rezept.id})">🗑️</button>
+            </td>
+          `;
+                    tbody.appendChild(row);
+                });
+            });
+    }
+
+    // Rezept hinzufügen
+    function rezeptHinzufuegen(event) {
+        event.preventDefault();
+        const produkt = document.getElementById("neuesProdukt").value;
+        const zutat = document.getElementById("neueZutat").value;
+        const menge = parseFloat(document.getElementById("neueMenge").value);
+
+        fetch("http://localhost:3000/rezepte/hinzufuegen", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ produkt, zutat, menge })
+        })
+            .then(res => res.json())
+            .then(() => ladeRezepte());
+    }
+
+    // Rezept löschen
+    function rezeptLoeschen(id) {
+        if (!confirm("Rezept wirklich löschen?")) return;
+        fetch("http://localhost:3000/rezepte/loeschen?id=" + id, {
+            method: "DELETE"
+        })
+            .then(res => res.json())
+            .then(() => ladeRezepte());
+    }
+
+    // Rezept aktualisieren
+    function aktualisieren(id, wert, feld) {
+        const body = { id };
+        if (feld === "produkt") body.produkt = wert;
+        if (feld === "zutat") body.zutat = wert;
+        if (feld === "menge") body.menge = parseFloat(wert);
+
+        fetch("http://localhost:3000/rezepte/aktualisieren", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+    }
+
+    ladeRezepte();
+</script>
+
+</body>
+</html>

@@ -57,6 +57,8 @@
   </button>
 </div>
 
+<div id="produktContainer"></div>
+
 <h1>Bestand prüfen</h1>
 
 <div class="item">
@@ -87,15 +89,29 @@
 <script>
 
 
+  // Produkte dynamisch laden
+  fetch("http://localhost:3000/produkt/liste")
+          .then(res => res.json())
+          .then(produkte => {
+            const container = document.getElementById("produktContainer");
+            produkte.forEach(p => {
+              const div = document.createElement("div");
+              div.className = "item";
+              div.innerHTML = `<span>${p.name}</span><input type="number" id="${p.name}" min="0">`;
+              container.appendChild(div);
+            });
+          });
+
+
   function pruefen() {
     const kommentar = document.getElementById("kommentar").value.trim();
     const daten = {
-      kaffee: parseInt(document.getElementById('kaffee').value) || 0,
-      milch: parseInt(document.getElementById('milch').value) || 0,
-      eier: parseInt(document.getElementById('eier').value) || 0,
-      mehl: parseInt(document.getElementById('mehl').value) || 0,
-      kommentar: kommentar
+      kommentar: document.getElementById("kommentar").value.trim()
     };
+
+    document.querySelectorAll(".item input").forEach(input => {
+      daten[input.id] = parseInt(input.value) || 0;
+    });
 
     fetch("http://localhost:3000/pruefen", {
       method: "POST",
