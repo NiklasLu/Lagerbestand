@@ -54,7 +54,9 @@ public class SimpleLoginServer {
         server.createContext("/rezepte", new RezepteHandler());                    // GET
         server.createContext("/rezepte/hinzufuegen", new RezeptHinzufuegenHandler());  // POST
         server.createContext("/rezepte/aktualisieren", new RezeptAktualisierenHandler()); // POST
-        server.createContext("/rezepte/loeschen", new RezeptLoeschenHandler());        // DELETE
+        server.createContext("/rezepte/loeschen", new RezeptLoeschenHandler());
+        server.createContext("/produkte/aktualisieren", new BestandAktualisierenHandler());// DELETE
+        server.createContext("/produkte/bestand", new ProduktBestandAktualisierenHandler());
         server.createContext("/", new StaticFileHandler("src/main/java/org/example"));
         server.setExecutor(null);
         server.start();
@@ -64,6 +66,130 @@ public class SimpleLoginServer {
         }
         System.out.println("✅ Server läuft auf http://localhost:3000");
     }
+
+    static class ProduktBestandAktualisierenHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"PATCH".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(405, -1);
+                return;
+            }
+
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "PATCH, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            String query = exchange.getRequestURI().getQuery();
+            int id = Integer.parseInt(query.split("=")[1]);
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody()))) {
+                String json = reader.readLine();
+                JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
+                int bestand = obj.get("bestand").getAsInt();
+
+                try (Connection conn = VerbindungDB.getConnection()) {
+                    PreparedStatement stmt = conn.prepareStatement("UPDATE produkte SET aktueller_bestand = ? WHERE id = ?");
+                    stmt.setInt(1, bestand);
+                    stmt.setInt(2, id);
+                    stmt.executeUpdate();
+
+                    String response = "{\"success\": true}";
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, response.length());
+                    exchange.getResponseBody().write(response.getBytes());
+                    exchange.getResponseBody().close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                String error = "{\"success\": false, \"message\": \"Fehler beim Aktualisieren\"}";
+                exchange.sendResponseHeaders(500, error.length());
+                exchange.getResponseBody().write(error.getBytes());
+                exchange.getResponseBody().close();
+            }
+        }
+    }
+
+
+    static class BestandAktualisierenHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(405, -1);
+                return;
+            }
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+                JsonObject data = JsonParser.parseReader(reader).getAsJsonObject();
+                int produktId = data.get("id").getAsInt();
+                int neuerBestand = data.get("aktueller_bestand").getAsInt();
+
+                try (Connection conn = VerbindungDB.getConnection()) {
+                    PreparedStatement stmt = conn.prepareStatement("UPDATE produkte SET aktueller_bestand = ? WHERE id = ?");
+                    stmt.setInt(1, neuerBestand);
+                    stmt.setInt(2, produktId);
+                    stmt.executeUpdate();
+                }
+
+                String response = "{\"success\": true}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length());
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                String response = "{\"success\": false}";
+                exchange.sendResponseHeaders(500, response.length());
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+            }
+        }
+    }
+
+    static class ProduktBestandUpdateHandler implements HttpHandler {
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!exchange.getRequestMethod().equalsIgnoreCase("POST")) {
+                exchange.sendResponseHeaders(405, -1);
+                return;
+            }
+            InputStream is = exchange.getRequestBody();
+            String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+            int id = Integer.parseInt(exchange.getRequestURI().getQuery().split("=")[1]);
+            int neuerBestand = json.get("bestand").getAsInt();
+
+            try (Connection conn = VerbindungDB.getConnection()) {
+                PreparedStatement stmt = conn.prepareStatement("UPDATE produkte SET aktueller_bestand = ? WHERE id = ?");
+                stmt.setInt(1, neuerBestand);
+                stmt.setInt(2, id);
+                stmt.executeUpdate();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            String response = "{\"success\": true}";
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length());
+            exchange.getResponseBody().write(response.getBytes());
+            exchange.getResponseBody().close();
+        }
+    }
+
 
     static class RezeptAktualisierenHandler implements HttpHandler {
         @Override
