@@ -50,8 +50,9 @@
     <thead>
     <tr>
         <th>Produkt</th>
-        <th>Max. Bestand</th>
         <th>Aktueller Bestand</th>
+        <th>Max. Bestand</th>
+        <th>Bestand aktualisieren</th>
         <th>Speichern</th>
         <th>Löschen</th>
     </tr>
@@ -67,6 +68,11 @@
     <button type="submit">➕ Rezept</button>
 </form>
 
+<h3>Kasse auswerten & Bestand aktualisieren</h3>
+<button onclick="kasseVerarbeiten()" style="background-color: darkgreen; color: white; padding: 10px; border-radius: 6px;">
+    💶 Verkäufe verarbeiten & Bestand aktualisieren
+</button>
+
 <table>
     <thead>
     <tr>
@@ -80,6 +86,47 @@
 </table>
 
 <script>
+
+    function kasseVerarbeiten() {
+        if (!confirm("Willst du die Verkäufe auswerten und den Bestand automatisch aktualisieren?")) return;
+        fetch("http://localhost:3000/kasse", {
+            method: "POST"
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ Verkäufe verarbeitet, Bestand aktualisiert.");
+                    ladeProdukte(); // Produkte neu laden
+                } else {
+                    alert("❌ Fehler: " + (data.message || ""));
+                }
+            })
+            .catch(err => {
+                console.error("Fehler bei Kasse-Verarbeitung:", err);
+                alert("❌ Serverfehler bei Kasse.");
+            });
+    }
+
+    function kasseAbrufen() {
+        fetch("http://localhost:3000/kasse", {
+            method: "POST"
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ Lagerbestand aktualisiert\n" + data.message);
+                    ladeProdukte();
+                } else {
+                    alert("❌ Fehler bei der Kassenverarbeitung");
+                }
+            })
+            .catch(err => {
+                console.error("Fehler:", err);
+                alert("❌ Serverfehler bei der Kassenverarbeitung");
+            });
+    }
+
+
     function ladeProdukte() {
         fetch("http://localhost:3000/produkte")
             .then(res => res.json())
@@ -89,12 +136,13 @@
                 data.forEach(p => {
                     const row = document.createElement("tr");
                     row.innerHTML = `
-          <td>${p.name}</td>
-          <td>${p.max_kapazitaet}</td>
-          <td><input type="number" id="bestand-${p.id}" value="${p.aktueller_bestand || 0}" /></td>
-          <td><button onclick="bestandAktualisieren(${p.id})">💾</button></td>
-          <td><button onclick="produktLoeschen(${p.id})">🗑️</button></td>
-        `;
+                    <td>${p.name}</td>
+                    <td>${p.aktueller_bestand ?? 0}</td>
+                    <td>${p.max_kapazitaet}</td>
+                    <td><input type="number" id="bestand-${p.id}" value="${p.aktueller_bestand ?? 0}" /></td>
+                    <td><button onclick="bestandAktualisieren(${p.id})">💾</button></td>
+                    <td><button onclick="produktLoeschen(${p.id})">🗑️</button></td>
+                `;
                     tbody.appendChild(row);
                 });
             });
@@ -120,8 +168,16 @@
         })
             .then(res => res.json())
             .then(data => {
-                if (data.success) alert("✅ Bestand gespeichert");
-                else alert("❌ Fehler beim Speichern");
+                if (data.success) {
+                    alert("✅ Bestand gespeichert");
+                    ladeProdukte(); // aktualisieren
+                } else {
+                    alert("❌ Fehler beim Speichern");
+                }
+            })
+            .catch(err => {
+                console.error("Serverfehler beim Speichern:", err);
+                alert("❌ Serverfehler");
             });
     }
 
@@ -141,11 +197,11 @@
                 data.forEach(r => {
                     const row = document.createElement("tr");
                     row.innerHTML = `
-          <td>${r.produkt}</td>
-          <td>${r.zutat}</td>
-          <td><input type="number" step="0.01" value="${r.menge}" onchange="rezeptAktualisieren('${r.produkt}', '${r.zutat}', this.value)"></td>
-          <td><button onclick="rezeptLoeschen('${r.produkt}', '${r.zutat}')">🗑️</button></td>
-        `;
+                        <td>${r.produkt}</td>
+                        <td>${r.zutat}</td>
+                        <td><input type="number" step="0.01" value="${r.menge}" onchange="rezeptAktualisieren('${r.produkt}', '${r.zutat}', this.value)"></td>
+                        <td><button onclick="rezeptLoeschen('${r.produkt}', '${r.zutat}')">🗑️</button></td>
+                    `;
                     tbody.appendChild(row);
                 });
             });
@@ -181,6 +237,7 @@
         }).then(() => ladeRezepte());
     }
 
+    // Seite laden
     ladeProdukte();
     ladeRezepte();
 </script>

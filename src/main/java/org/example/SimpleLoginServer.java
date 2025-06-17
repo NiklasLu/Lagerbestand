@@ -57,6 +57,7 @@ public class SimpleLoginServer {
         server.createContext("/rezepte/loeschen", new RezeptLoeschenHandler());
         server.createContext("/produkte/aktualisieren", new BestandAktualisierenHandler());// DELETE
         server.createContext("/produkte/bestand", new ProduktBestandAktualisierenHandler());
+        server.createContext("/verkaufte_artikel/eintragen", new VerkaufteArtikelEintragenHandler());
         server.createContext("/", new StaticFileHandler("src/main/java/org/example"));
         server.setExecutor(null);
         server.start();
@@ -66,6 +67,109 @@ public class SimpleLoginServer {
         }
         System.out.println("✅ Server läuft auf http://localhost:3000");
     }
+
+    static class VerkaufteArtikelEintragenHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(405, -1);
+                return;
+            }
+
+            try (InputStream is = exchange.getRequestBody();
+                 Connection conn = VerbindungDB.getConnection()) {
+
+                String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                JsonObject obj = JsonParser.parseString(body).getAsJsonObject();
+                String produkt = obj.get("produkt").getAsString();
+                int anzahl = obj.get("anzahl").getAsInt();
+
+                PreparedStatement stmt = conn.prepareStatement(
+                    "INSERT INTO verkaufte_artikel (name, anzahl) VALUES (?, ?)"
+                );
+                stmt.setString(1, produkt);
+                stmt.setInt(2, anzahl);
+                stmt.executeUpdate();
+
+                stmt.executeBatch();
+
+                String response = "{\"success\": true}";
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length());
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                String response = "{\"success\": false, \"message\": \"Fehler beim Speichern der Verkäufe\"}";
+                exchange.sendResponseHeaders(500, response.length());
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+            }
+        }
+    }
+
+
+    // Handler zum Speichern von Verkäufen
+    static class VerkaufEintragenHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(405, -1);
+                return;
+            }
+
+            try (InputStream is = exchange.getRequestBody();
+                 InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
+                 BufferedReader reader = new BufferedReader(isr);
+                 Connection conn = VerbindungDB.getConnection()) {
+
+                JsonObject requestJson = JsonParser.parseReader(reader).getAsJsonObject();
+                String produkt = requestJson.get("produkt").getAsString();
+                int anzahl = requestJson.get("anzahl").getAsInt();
+
+                // Eintrag speichern
+                PreparedStatement stmt = conn.prepareStatement(
+                    "INSERT INTO verkaufte_artikel (name, anzahl) VALUES (?, ?)"
+                );
+                stmt.setString(1, produkt);
+                stmt.setInt(2, anzahl);
+                stmt.executeUpdate();
+
+                String response = new Gson().toJson(Map.of("success", true));
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length());
+                exchange.getResponseBody().write(response.getBytes());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                String response = new Gson().toJson(Map.of("success", false));
+                exchange.sendResponseHeaders(500, response.length());
+                exchange.getResponseBody().write(response.getBytes());
+            }
+        }
+    }
+
 
     static class ProduktBestandAktualisierenHandler implements HttpHandler {
         @Override
@@ -453,106 +557,100 @@ public class SimpleLoginServer {
                 return;
             }
 
-            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-                try (Connection conn = VerbindungDB.getConnection()) {
-                    // 1. Verkauf simulieren
-                    Map<String, Integer> verkaufteProdukte = new HashMap<>();
-                    verkaufteProdukte.put("Cappuccino", 14);
-                    verkaufteProdukte.put("Latte Macchiato", 11);
-                    verkaufteProdukte.put("Espresso", 8);
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(405, -1);
+                return;
+            }
 
-                    // 2. Rezepte auslesen
-                    Map<String, Map<String, Double>> rezeptMap = new HashMap<>();
-                    PreparedStatement rezepteStmt = conn.prepareStatement("SELECT * FROM rezepte");
-                    ResultSet rezepteRs = rezepteStmt.executeQuery();
-                    while (rezepteRs.next()) {
-                        String produkt = rezepteRs.getString("produkt_name");
-                        String zutat = rezepteRs.getString("zutat_name");
-                        double menge = rezepteRs.getDouble("menge_pro_stueck");
-                        rezeptMap.putIfAbsent(produkt, new HashMap<>());
-                        rezeptMap.get(produkt).put(zutat, menge);
-                    }
+            try (Connection conn = VerbindungDB.getConnection()) {
 
-                    // 3. Verbrauch berechnen
-                    Map<String, Double> gesamtVerbrauch = new HashMap<>();
-                    for (Map.Entry<String, Integer> entry : verkaufteProdukte.entrySet()) {
-                        String produkt = entry.getKey();
-                        int anzahl = entry.getValue();
-                        if (!rezeptMap.containsKey(produkt)) continue;
-                        for (Map.Entry<String, Double> zutatEntry : rezeptMap.get(produkt).entrySet()) {
-                            String zutat = zutatEntry.getKey();
-                            double menge = zutatEntry.getValue() * anzahl;
-                            gesamtVerbrauch.put(zutat, gesamtVerbrauch.getOrDefault(zutat, 0.0) + menge);
-                        }
-                    }
+                // 1. Verkäufe abrufen
+                Map<String, Integer> verkaufteProdukte = new HashMap<>();
+                ResultSet verkaufRs = conn.createStatement().executeQuery(
+                    "SELECT name, SUM(anzahl) AS anzahl FROM verkaufte_artikel GROUP BY name");
+                while (verkaufRs.next()) {
+                    verkaufteProdukte.put(verkaufRs.getString("name"), verkaufRs.getInt("anzahl"));
+                }
 
-                    // 4. aktuellen Bestand holen
-                    Map<String, Integer> aktuellerBestand = new HashMap<>();
-                    Statement bestandsStmt = conn.createStatement();
-                    ResultSet bestandsRs = bestandsStmt.executeQuery("SELECT * FROM bestand ORDER BY gespeichert_am DESC LIMIT 1");
-                    if (bestandsRs.next()) {
-                        ResultSetMetaData meta = bestandsRs.getMetaData();
-                        for (int i = 1; i <= meta.getColumnCount(); i++) {
-                            String spalte = meta.getColumnName(i);
-                            if (spalte.equals("id") || spalte.equals("gespeichert_am")) continue;
-                            aktuellerBestand.put(spalte, bestandsRs.getInt(spalte));
-                        }
-                    }
+                // 2. Rezepte holen
+                Map<String, Map<String, Double>> rezeptMap = new HashMap<>();
+                ResultSet rezepteRs = conn.createStatement().executeQuery("SELECT * FROM rezepte");
+                while (rezepteRs.next()) {
+                    String produkt = rezepteRs.getString("produkt_name");
+                    int zutatId = rezepteRs.getInt("zutat_id");
+                    String zutat = getProduktNameById(conn, zutatId);
+                    double menge = rezepteRs.getDouble("menge_pro_stueck");
 
-                    // 5. Verbrauch anwenden (nur ganze Einheiten abziehen)
-                    Map<String, Integer> neuerBestand = new HashMap<>(aktuellerBestand);
-                    for (Map.Entry<String, Double> entry : gesamtVerbrauch.entrySet()) {
-                        String zutat = entry.getKey();
-                        double verbrauch = entry.getValue();
-                        int abziehen = (int) verbrauch; // nur ganze Einheiten
-                        neuerBestand.put(zutat, Math.max(0, aktuellerBestand.getOrDefault(zutat, 0) - abziehen));
-                    }
+                    rezeptMap.putIfAbsent(produkt, new HashMap<>());
+                    rezeptMap.get(produkt).put(zutat, menge);
+                }
 
-                    // 6. neuen Bestand speichern – nur wenn Änderungen da sind
-                    if (!neuerBestand.isEmpty()) {
-                        StringBuilder sql = new StringBuilder("INSERT INTO bestand (");
-                        StringBuilder fragezeichen = new StringBuilder();
-                        List<Integer> werte = new ArrayList<>();
-                        for (String zutat : neuerBestand.keySet()) {
-                            sql.append(zutat).append(",");
-                            fragezeichen.append("?,");
-                            werte.add(neuerBestand.get(zutat));
-                        }
-                        sql.setLength(sql.length() - 1);
-                        fragezeichen.setLength(fragezeichen.length() - 1);
-                        sql.append(") VALUES (").append(fragezeichen).append(")");
+                // 3. Verbrauch berechnen
+                Map<String, Double> gesamtVerbrauch = new HashMap<>();
+                for (Map.Entry<String, Integer> entry : verkaufteProdukte.entrySet()) {
+                    String produkt = entry.getKey();
+                    int anzahl = entry.getValue();
+                    if (!rezeptMap.containsKey(produkt)) continue;
 
-                        PreparedStatement insert = conn.prepareStatement(sql.toString());
-                        for (int i = 0; i < werte.size(); i++) {
-                            insert.setInt(i + 1, werte.get(i));
-                        }
-                        insert.executeUpdate();
-                    }
-
-                    // 7. Rückmeldung
-                    JsonObject json = new JsonObject();
-                    json.addProperty("success", true);
-                    json.addProperty("message", "Kasse verarbeitet. Lagerbestand aktualisiert.");
-
-                    String response = new Gson().toJson(json);
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(200, response.length());
-                    try (OutputStream os = exchange.getResponseBody()) {
-                        os.write(response.getBytes());
-                    }
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    String response = "{\"success\": false, \"message\": \"Fehler bei Kasse-Verarbeitung\"}";
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(500, response.length());
-                    try (OutputStream os = exchange.getResponseBody()) {
-                        os.write(response.getBytes());
+                    for (Map.Entry<String, Double> zutat : rezeptMap.get(produkt).entrySet()) {
+                        String zutatName = zutat.getKey();
+                        double verbrauch = zutat.getValue() * anzahl;
+                        gesamtVerbrauch.put(zutatName,
+                            gesamtVerbrauch.getOrDefault(zutatName, 0.0) + verbrauch);
                     }
                 }
-            } else {
-                exchange.sendResponseHeaders(405, -1);
+
+                // 4. aktuellen Bestand holen
+                Map<String, Integer> aktuellerBestand = new HashMap<>();
+                ResultSet bestandsRs = conn.createStatement().executeQuery("SELECT name, aktueller_bestand FROM produkte");
+                while (bestandsRs.next()) {
+                    aktuellerBestand.put(bestandsRs.getString("name"), bestandsRs.getInt("aktueller_bestand"));
+                }
+
+                // 5. neuen Bestand berechnen
+                for (Map.Entry<String, Double> entry : gesamtVerbrauch.entrySet()) {
+                    String zutat = entry.getKey();
+                    int abziehen = (int) Math.floor(entry.getValue()); // nur ganze Einheiten
+                    int alt = aktuellerBestand.getOrDefault(zutat, 0);
+                    int neu = Math.max(0, alt - abziehen);
+
+                    PreparedStatement update = conn.prepareStatement("UPDATE produkte SET aktueller_bestand = ? WHERE name = ?");
+                    update.setInt(1, neu);
+                    update.setString(2, zutat);
+                    update.executeUpdate();
+                }
+
+                // 6. Verkäufe löschen
+                conn.createStatement().executeUpdate("DELETE FROM verkaufte_artikel");
+
+                // 7. Erfolgsmeldung senden
+                JsonObject json = new JsonObject();
+                json.addProperty("success", true);
+                json.addProperty("message", "Verkäufe verarbeitet, Bestand aktualisiert.");
+                byte[] response = json.toString().getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                String error = "{\"success\": false, \"message\": \"Fehler bei der Kassenverarbeitung\"}";
+                byte[] errorBytes = error.getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(500, errorBytes.length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(errorBytes);
+                }
             }
+        }
+
+        private String getProduktNameById(Connection conn, int id) throws SQLException {
+            PreparedStatement stmt = conn.prepareStatement("SELECT name FROM produkte WHERE id = ?");
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) return rs.getString("name");
+            return null;
         }
     }
 
@@ -640,29 +738,39 @@ public class SimpleLoginServer {
 
     //Neuer server
     static class ProduktHandler implements HttpHandler {
+        @Override
         public void handle(HttpExchange exchange) throws IOException {
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+
             if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
                 try (Connection conn = VerbindungDB.getConnection()) {
                     Statement stmt = conn.createStatement();
                     ResultSet rs = stmt.executeQuery("SELECT * FROM produkte");
 
-                    JsonArray arr = new JsonArray();
+                    JsonArray array = new JsonArray();
                     while (rs.next()) {
                         JsonObject obj = new JsonObject();
                         obj.addProperty("id", rs.getInt("id"));
                         obj.addProperty("name", rs.getString("name"));
                         obj.addProperty("max_kapazitaet", rs.getInt("max_kapazitaet"));
-                        arr.add(obj);
+                        obj.addProperty("aktueller_bestand", rs.getInt("aktueller_bestand")); // ✅ direkt aus Tabelle
+                        array.add(obj);
                     }
-                    String response = arr.toString();
+
+                    String response = new Gson().toJson(array);
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
                     exchange.sendResponseHeaders(200, response.length());
-                    OutputStream os = exchange.getResponseBody();
-                    os.write(response.getBytes());
-                    os.close();
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(response.getBytes());
+                    }
+
                 } catch (SQLException e) {
                     e.printStackTrace();
-                    exchange.sendResponseHeaders(500, -1);
+                    String error = "{\"success\": false}";
+                    exchange.sendResponseHeaders(500, error.length());
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(error.getBytes());
+                    }
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
