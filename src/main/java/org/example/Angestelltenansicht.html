@@ -2,82 +2,206 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Angestelltenansicht</title>
+    <title>Angestellten-Kasse</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            padding: 2rem;
-            background-color: #f9f9f9;
-        }
-        h1 {
+            padding: 1rem;
+            background-color: #f4f4f4;
             text-align: center;
         }
-        form {
-            max-width: 400px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        label, select, input, button {
-            display: block;
-            width: 100%;
+
+        h1 {
             margin-bottom: 1rem;
         }
-        button {
+
+        .produkt-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .produkt-buttons button {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border: none;
             background-color: #007bff;
             color: white;
-            border: none;
-            padding: 0.6rem;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .produkt-buttons button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .menge-display {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            border: 2px solid #ccc;
+            width: 100px;
+            margin: 0 auto 1rem auto;
+            padding: 0.5rem;
+            background-color: #fff;
+            border-radius: 8px;
+        }
+
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .numpad button {
+            padding: 1rem;
+            font-size: 1.2rem;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #e0e0e0;
+            border: none;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .numpad button:hover {
+            background-color: #ccc;
+            transform: scale(1.05);
+        }
+
+        .bestell-liste {
+            margin-top: 1rem;
+        }
+
+        .bestell-liste ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .bestell-liste li {
+            margin: 0.3rem 0;
+        }
+
+        .abschicken-btn {
+            margin-top: 1rem;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            background-color: green;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .abschicken-btn:hover {
+            background-color: darkgreen;
         }
     </style>
 </head>
 <body>
 
-<h1>Verkäufe eintragen</h1>
+<h1>Bestellungen aufnehmen</h1>
 
-<form onsubmit="verkaufEintragen(event)">
-    <label for="produkt">Produkt:</label>
-    <select id="produkt" required>
-        <option value="">Bitte wählen</option>
-        <option value="Latte">Latte</option>
-        <option value="Cappuccino">Cappuccino</option>
-        <option value="Espresso">Espresso</option>
-        <option value="Kaffee">Kaffee</option>
-    </select>
+<div class="produkt-buttons" id="produktButtons"></div>
 
-    <label for="anzahl">Anzahl verkauft:</label>
-    <input type="number" id="anzahl" min="1" value="1" required>
+<div class="menge-display" id="mengenAnzeige">0</div>
 
-    <button type="submit">Eintragen</button>
-</form>
+<div class="numpad" id="numpad"></div>
+
+<div class="bestell-liste">
+    <h3>Aktuelle Bestellung</h3>
+    <ul id="bestellung"></ul>
+    <button class="abschicken-btn" onclick="bestellungAbsenden()">Bestellung abschicken</button>
+</div>
 
 <script>
-    function verkaufEintragen(event) {
-        event.preventDefault();
-        const produkt = document.getElementById("produkt").value;
-        const anzahl = parseInt(document.getElementById("anzahl").value);
+    let aktuelleMenge = "";
+    let letztesProdukt = null;
+    const bestellung = {};
+    const rezeptProdukte = new Set();
+
+    // Rezepte abrufen → Buttons generieren
+    fetch("http://localhost:3000/rezepte")
+        .then(res => res.json())
+        .then(data => {
+            data.forEach(r => rezeptProdukte.add(r.produkt));
+            rezeptProdukte.forEach(produkt => {
+                const btn = document.createElement("button");
+                btn.textContent = produkt;
+                btn.onclick = () => produktHinzufuegen(produkt);
+                document.getElementById("produktButtons").appendChild(btn);
+            });
+        });
+
+    const numpadContainer = document.getElementById("numpad");
+    [1,2,3,4,5,6,7,8,9,"C",0,"Zucker"].forEach(key => {
+        const btn = document.createElement("button");
+        btn.textContent = key;
+        if (key === "Zucker") {
+            btn.onclick = () => {
+                if (!letztesProdukt) return alert("Bitte zuerst ein Produkt auswählen.");
+                const keyName = `Zucker für ${letztesProdukt}`;
+                bestellung[keyName] = (bestellung[keyName] || 0) + 1;
+                zeigeBestellung();
+            };
+        } else {
+            btn.onclick = () => numpadEingabe(key);
+        }
+        numpadContainer.appendChild(btn);
+    });
+
+    function numpadEingabe(key) {
+        if (key === "C") {
+            aktuelleMenge = "";
+        } else {
+            aktuelleMenge += key.toString();
+        }
+        document.getElementById("mengenAnzeige").textContent = aktuelleMenge || "0";
+    }
+
+    function produktHinzufuegen(name) {
+        const menge = parseInt(aktuelleMenge);
+        if (!menge || menge <= 0) return alert("Bitte gültige Menge eingeben.");
+        bestellung[name] = (bestellung[name] || 0) + menge;
+        aktuelleMenge = "";
+        letztesProdukt = name;
+        document.getElementById("mengenAnzeige").textContent = "0";
+        zeigeBestellung();
+    }
+
+    function zeigeBestellung() {
+        const ul = document.getElementById("bestellung");
+        ul.innerHTML = "";
+        Object.entries(bestellung).forEach(([produkt, anzahl]) => {
+            const li = document.createElement("li");
+            li.textContent = `${produkt}: ${anzahl}x`;
+            ul.appendChild(li);
+        });
+    }
+
+    function bestellungAbsenden() {
+        const daten = Object.entries(bestellung).map(([produkt, anzahl]) => ({ produkt, anzahl }));
+        if (daten.length === 0) return alert("Keine Artikel ausgewählt.");
 
         fetch("http://localhost:3000/verkaufte_artikel/eintragen", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ produkt, anzahl })
+            body: JSON.stringify(daten)
         })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert("✅ Verkauf gespeichert!");
-                    event.target.reset();
+                    alert("✅ Bestellung gespeichert!");
+                    Object.keys(bestellung).forEach(k => delete bestellung[k]);
+                    zeigeBestellung();
                 } else {
-                    alert("❌ Fehler beim Speichern.");
+                    alert("❌ Fehler beim Absenden.");
                 }
-            })
-            .catch(err => {
-                console.error("Fehler:", err);
-                alert("❌ Serverfehler.");
             });
     }
 </script>

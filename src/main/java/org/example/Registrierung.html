@@ -2,107 +2,98 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Registrieren</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrierung</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
         }
-
-        .container {
-            background-color: #fff;
+        .register-container {
+            background: white;
             padding: 2rem;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            width: 400px;
-        }
-
-        h2 {
+            width: 300px;
             text-align: center;
-            margin-bottom: 1.5rem;
         }
-
-        label {
-            display: block;
-            margin-top: 1rem;
+        .register-container h2 {
+            margin-bottom: 1rem;
         }
-
-        input[type="text"],
-        input[type="password"] {
+        .register-container input {
             width: 100%;
-            padding: 0.5rem;
-            margin-top: 0.3rem;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-
-        button {
+        .register-container button {
             width: 100%;
-            margin-top: 2rem;
-            padding: 0.7rem;
-            font-size: 1rem;
-            background-color: #4CAF50;
+            padding: 0.6rem;
+            margin-top: 1rem;
+            background-color: #007bff;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 5px;
+            font-size: 1rem;
             cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
         }
-
-        button:hover {
-            background-color: #388E3C;
+        .register-container button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+        .back-link {
+            display: block;
+            margin-top: 1rem;
+            color: #666;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Benutzer registrieren</h2>
+<div class="register-container">
+    <h2>Registrieren</h2>
     <form onsubmit="registrieren(event)">
-        <label for="vorname">Vorname:</label>
-        <input type="text" id="vorname" required>
-
-        <label for="nachname">Nachname:</label>
-        <input type="text" id="nachname" required>
-
-        <label for="name">Benutzername:</label>
-        <input type="text" id="name" required>
-
-        <label for="passwort">Passwort:</label>
-        <input type="password" id="passwort" required>
-
+        <input type="text" id="username" placeholder="Benutzername" required>
+        <input type="password" id="password" placeholder="Passwort" required>
         <button type="submit">Registrieren</button>
     </form>
+    <a class="back-link" href="Login.html">Zurück zum Login</a>
 </div>
 
 <script>
     function registrieren(event) {
         event.preventDefault();
-        const vorname = document.getElementById("vorname").value;
-        const nachname = document.getElementById("nachname").value;
-        const name = document.getElementById("name").value;
-        const passwort = document.getElementById("passwort").value;
+        const name = document.getElementById('username').value;
+        const passwort = document.getElementById('password').value;
 
-        fetch("http://localhost:3000/benutzer/anlegen", {
+        fetch("http://localhost:3000/registrieren", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ vorname, nachname, name, passwort })
+            body: JSON.stringify({ name, passwort })
         })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert("✅ Registrierung erfolgreich!");
+                    alert("✅ Registrierung erfolgreich");
                     window.location.href = "Login.html";
                 } else {
-                    alert("❌ Fehler bei der Registrierung.");
+                    alert("❌ Fehler bei der Registrierung");
                 }
             })
-            .catch(error => {
-                console.error("Fehler:", error);
-                alert("❌ Serverfehler.");
+            .catch(err => {
+                console.error("Registrierungsfehler:", err);
+                alert("❌ Serverfehler bei der Registrierung");
             });
     }
 </script>

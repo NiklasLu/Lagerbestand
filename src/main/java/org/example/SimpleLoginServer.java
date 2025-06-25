@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
@@ -89,16 +90,21 @@ public class SimpleLoginServer {
                  Connection conn = VerbindungDB.getConnection()) {
 
                 String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-                JsonObject obj = JsonParser.parseString(body).getAsJsonObject();
-                String produkt = obj.get("produkt").getAsString();
-                int anzahl = obj.get("anzahl").getAsInt();
+                JsonArray array = JsonParser.parseString(body).getAsJsonArray();
 
                 PreparedStatement stmt = conn.prepareStatement(
                     "INSERT INTO verkaufte_artikel (name, anzahl) VALUES (?, ?)"
                 );
-                stmt.setString(1, produkt);
-                stmt.setInt(2, anzahl);
-                stmt.executeUpdate();
+
+                for (JsonElement elem : array) {
+                    JsonObject obj = elem.getAsJsonObject();
+                    String name = obj.get("produkt").getAsString(); // beachte: "produkt" statt "name"
+                    int anzahl = obj.get("anzahl").getAsInt();
+
+                    stmt.setString(1, name);
+                    stmt.setInt(2, anzahl);
+                    stmt.addBatch();
+                }
 
                 stmt.executeBatch();
 
@@ -111,10 +117,10 @@ public class SimpleLoginServer {
 
             } catch (Exception e) {
                 e.printStackTrace();
-                String response = "{\"success\": false, \"message\": \"Fehler beim Speichern der Verkäufe\"}";
-                exchange.sendResponseHeaders(500, response.length());
+                String error = "{\"success\": false}";
+                exchange.sendResponseHeaders(500, error.length());
                 try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(response.getBytes());
+                    os.write(error.getBytes());
                 }
             }
         }
@@ -174,11 +180,7 @@ public class SimpleLoginServer {
     static class ProduktBestandAktualisierenHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            if (!"PATCH".equalsIgnoreCase(exchange.getRequestMethod())) {
-                exchange.sendResponseHeaders(405, -1);
-                return;
-            }
-
+            // CORS Header immer setzen
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "PATCH, OPTIONS");
             exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
@@ -188,31 +190,46 @@ public class SimpleLoginServer {
                 return;
             }
 
-            String query = exchange.getRequestURI().getQuery();
-            int id = Integer.parseInt(query.split("=")[1]);
+            if (!"PATCH".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(405, -1);
+                return;
+            }
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody()))) {
+            try {
+                String query = exchange.getRequestURI().getQuery();
+                if (query == null || !query.contains("id=")) {
+                    throw new IllegalArgumentException("Ungültige oder fehlende ID");
+                }
+
+                int id = Integer.parseInt(query.split("=")[1]);
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody()));
                 String json = reader.readLine();
+
                 JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
                 int bestand = obj.get("bestand").getAsInt();
 
                 try (Connection conn = VerbindungDB.getConnection()) {
-                    PreparedStatement stmt = conn.prepareStatement("UPDATE produkte SET aktueller_bestand = ? WHERE id = ?");
+                    PreparedStatement stmt = conn.prepareStatement(
+                        "UPDATE produkte SET aktueller_bestand = ? WHERE id = ?");
                     stmt.setInt(1, bestand);
                     stmt.setInt(2, id);
                     stmt.executeUpdate();
-
-                    String response = "{\"success\": true}";
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(200, response.length());
-                    exchange.getResponseBody().write(response.getBytes());
-                    exchange.getResponseBody().close();
                 }
+
+                String response = "{\"success\": true}";
+                byte[] bytes = response.getBytes();
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, bytes.length);
+                exchange.getResponseBody().write(bytes);
+
             } catch (Exception e) {
                 e.printStackTrace();
                 String error = "{\"success\": false, \"message\": \"Fehler beim Aktualisieren\"}";
-                exchange.sendResponseHeaders(500, error.length());
-                exchange.getResponseBody().write(error.getBytes());
+                byte[] bytes = error.getBytes();
+                exchange.sendResponseHeaders(500, bytes.length);
+                exchange.getResponseBody().write(bytes);
+            } finally {
                 exchange.getResponseBody().close();
             }
         }

@@ -36,6 +36,7 @@
     </style>
 </head>
 <body>
+<button onclick="logout()" style="position:absolute; top:20px; right:20px;">Logout</button>
 
 <h1>Chefansicht</h1>
 
@@ -45,6 +46,7 @@
     <input type="number" id="kapazitaet" placeholder="Max. Lagerkapazität" required>
     <button type="submit">➕ Produkt</button>
 </form>
+<div id="lagerwarnungen" style="margin-top: 1rem; color: darkred; font-weight: bold;"></div>
 
 <table>
     <thead>
@@ -133,6 +135,8 @@
             .then(data => {
                 const tbody = document.getElementById("produktTabelle");
                 tbody.innerHTML = "";
+                const warnungen = [];
+
                 data.forEach(p => {
                     const row = document.createElement("tr");
                     row.innerHTML = `
@@ -144,7 +148,19 @@
                     <td><button onclick="produktLoeschen(${p.id})">🗑️</button></td>
                 `;
                     tbody.appendChild(row);
+
+                    // Warnung, wenn Bestand unter 20 % von Kapazität
+                    const max = p.max_kapazitaet;
+                    const ist = p.aktueller_bestand;
+                    if (max > 0 && ist / max <= 0.2) {
+                        warnungen.push(`⚠️ ${p.name}: Nur noch ${ist} von ${max} verfügbar!`);
+                    }
                 });
+
+                const warnDiv = document.getElementById("lagerwarnungen");
+                warnDiv.innerHTML = warnungen.length > 0
+                    ? warnungen.join("<br>")
+                    : "";
             });
     }
 
@@ -240,6 +256,12 @@
     // Seite laden
     ladeProdukte();
     ladeRezepte();
+
+
+    function logout() {
+        window.location.href = "Login.html"; // ggf. Pfad anpassen
+    }
+
 </script>
 
 </body>
