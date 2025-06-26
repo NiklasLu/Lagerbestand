@@ -103,6 +103,11 @@
     <tbody id="produktTabelle"></tbody>
 </table>
 
+<h3>Kasse auswerten & Bestand aktualisieren</h3>
+<button onclick="kasseVerarbeiten()" style="background-color: darkgreen; color: white; padding: 10px; border-radius: 6px;">
+    💶 Verkäufe verarbeiten & Bestand aktualisieren
+</button>
+
 <h2>Rezepte verwalten</h2>
 <form onsubmit="rezeptHinzufuegen(event)">
     <input type="text" id="rezeptProdukt" placeholder="Produktname" required>
@@ -111,10 +116,7 @@
     <button type="submit">➕ Rezept</button>
 </form>
 
-<h3>Kasse auswerten & Bestand aktualisieren</h3>
-<button onclick="kasseVerarbeiten()" style="background-color: darkgreen; color: white; padding: 10px; border-radius: 6px;">
-    💶 Verkäufe verarbeiten & Bestand aktualisieren
-</button>
+
 
 <div class="rezept-tabelle-scroll">
     <table>
