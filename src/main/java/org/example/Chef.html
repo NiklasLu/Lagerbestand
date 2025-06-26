@@ -3,7 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>Chefansicht</title>
+
+
     <style>
+
+        .rezept-tabelle-scroll {
+            max-height: 300px;
+            overflow-y: auto;
+            display: block;
+            margin-top: 1rem;
+        }
+
+        .kritisch {
+            background-color: #f8d7da !important;
+        }
+
         body {
             font-family: Arial, sans-serif;
             padding: 2rem;
@@ -36,6 +50,32 @@
     </style>
 </head>
 <body>
+
+<div id="abweichungHinweis" style="
+    display: none;
+    background-color: #ffe0e0;
+    border: 1px solid red;
+    color: darkred;
+    font-weight: bold;
+    padding: 0.8rem 1.2rem;
+    margin: 1rem auto;
+    width: fit-content;
+    max-width: 90%;
+    border-radius: 6px;
+    position: relative;
+    text-align: center;
+">
+    ❗ Es liegen Abweichungen vor. Bitte prüfen!
+    <span onclick="this.parentElement.style.display='none'"
+          style="position: absolute; top: 4px; right: 8px; cursor: pointer; font-weight: normal;">✖</span>
+</div>
+
+<!-- Danach kommt der Rest deines Inhalts -->
+<button onclick="logout()" style="position:absolute; top:20px; right:20px;">Logout</button>
+
+
+<div id="abweichungsWarnung" style="color: red; font-weight: bold; margin-top: 1rem;"></div>
+
 <button onclick="logout()" style="position:absolute; top:20px; right:20px;">Logout</button>
 
 <h1>Chefansicht</h1>
@@ -44,6 +84,7 @@
 <form onsubmit="produktHinzufuegen(event)">
     <input type="text" id="produktname" placeholder="Produktname" required>
     <input type="number" id="kapazitaet" placeholder="Max. Lagerkapazität" required>
+    <input type="number" id="aktuellerBestand" placeholder="Aktueller Bestand" required>
     <button type="submit">➕ Produkt</button>
 </form>
 <div id="lagerwarnungen" style="margin-top: 1rem; color: darkred; font-weight: bold;"></div>
@@ -75,17 +116,19 @@
     💶 Verkäufe verarbeiten & Bestand aktualisieren
 </button>
 
-<table>
-    <thead>
-    <tr>
-        <th>Produkt</th>
-        <th>Zutat</th>
-        <th>Menge</th>
-        <th>Aktion</th>
-    </tr>
-    </thead>
-    <tbody id="rezepteTabelle"></tbody>
-</table>
+<div class="rezept-tabelle-scroll">
+    <table>
+        <thead>
+        <tr>
+            <th>Produkt</th>
+            <th>Zutat</th>
+            <th>Menge</th>
+            <th>Aktion</th>
+        </tr>
+        </thead>
+        <tbody id="rezepteTabelle"></tbody>
+    </table>
+</div>
 
 <script>
 
@@ -132,35 +175,55 @@
     function ladeProdukte() {
         fetch("http://localhost:3000/produkte")
             .then(res => res.json())
-            .then(data => {
-                const tbody = document.getElementById("produktTabelle");
-                tbody.innerHTML = "";
-                const warnungen = [];
+            .then(produkte => {
+                // Abweichungen laden
+                fetch("http://localhost:3000/abweichung")
+                    .then(res => res.json())
+                    .then(abweichungen => {
+                        const kritischeProdukte = new Set();
+                        abweichungen.forEach(eintrag => {
+                            Object.keys(eintrag).forEach(name => {
+                                if (!["zeit", "kommentar", "timestamp"].includes(name.toLowerCase())) {
+                                    kritischeProdukte.add(name.toLowerCase());
+                                }
+                            });
+                        });
 
-                data.forEach(p => {
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
-                    <td>${p.name}</td>
-                    <td>${p.aktueller_bestand ?? 0}</td>
-                    <td>${p.max_kapazitaet}</td>
-                    <td><input type="number" id="bestand-${p.id}" value="${p.aktueller_bestand ?? 0}" /></td>
-                    <td><button onclick="bestandAktualisieren(${p.id})">💾</button></td>
-                    <td><button onclick="produktLoeschen(${p.id})">🗑️</button></td>
-                `;
-                    tbody.appendChild(row);
+                        // Tabelle aufbauen
+                        const tbody = document.getElementById("produktTabelle");
+                        tbody.innerHTML = "";
+                        const warnungen = [];
 
-                    // Warnung, wenn Bestand unter 20 % von Kapazität
-                    const max = p.max_kapazitaet;
-                    const ist = p.aktueller_bestand;
-                    if (max > 0 && ist / max <= 0.2) {
-                        warnungen.push(`⚠️ ${p.name}: Nur noch ${ist} von ${max} verfügbar!`);
-                    }
-                });
+                        produkte.forEach(p => {
+                            const ist = p.aktueller_bestand ?? 0;
+                            const max = p.max_kapazitaet;
+                            const istKritisch = kritischeProdukte.has(p.name.toLowerCase());
 
-                const warnDiv = document.getElementById("lagerwarnungen");
-                warnDiv.innerHTML = warnungen.length > 0
-                    ? warnungen.join("<br>")
-                    : "";
+                            const row = document.createElement("tr");
+                            if (istKritisch) row.classList.add("kritisch");
+
+                            row.innerHTML = `
+                            <td>${p.name}</td>
+                            <td>${ist}</td>
+                            <td>${max}</td>
+                            <td><input type="number" id="bestand-${p.id}" value="${ist}" /></td>
+                            <td><button onclick="bestandAktualisieren(${p.id})">💾</button></td>
+                            <td><button onclick="produktLoeschen(${p.id})">🗑️</button></td>
+                        `;
+                            tbody.appendChild(row);
+
+                            if (istKritisch) {
+                                warnungen.push(`❗ Fehlbestand bei: ${p.name}`);
+                            }
+
+                            if (max > 0 && ist / max <= 0.2) {
+                                warnungen.push(`⚠️ ${p.name}: Nur noch ${ist} von ${max} verfügbar!`);
+                            }
+                        });
+
+                        const warnDiv = document.getElementById("lagerwarnungen");
+                        warnDiv.innerHTML = warnungen.length > 0 ? warnungen.join("<br>") : "";
+                    });
             });
     }
 
@@ -168,11 +231,18 @@
         e.preventDefault();
         const name = document.getElementById("produktname").value;
         const max = parseInt(document.getElementById("kapazitaet").value);
+        const bestand = parseInt(document.getElementById("aktuellerBestand").value);
+
         fetch("http://localhost:3000/produkte/hinzufuegen", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, max_kapazitaet: max })
-        }).then(res => res.json()).then(() => ladeProdukte());
+            body: JSON.stringify({ name, max_kapazitaet: max, aktueller_bestand: bestand })
+        })
+            .then(res => res.json())
+            .then(() => {
+                ladeProdukte();
+                e.target.reset();
+            });
     }
 
     function bestandAktualisieren(id) {
@@ -220,6 +290,21 @@
                     `;
                     tbody.appendChild(row);
                 });
+            });
+    }
+
+    pruefeAbweichungen(); // Neue Funktion prüfen
+
+    function pruefeAbweichungen() {
+        fetch("http://localhost:3000/abweichung")
+            .then(res => res.json())
+            .then(data => {
+                if (data.length > 0) {
+                    document.getElementById("abweichungHinweis").style.display = "block";
+                }
+            })
+            .catch(err => {
+                console.error("Fehler beim Prüfen von Abweichungen:", err);
             });
     }
 

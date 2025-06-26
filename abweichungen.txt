@@ -14,3 +14,82 @@ Gezählt:  Kaffee=7, Milch=3, Eier=7, Mehl=2
 Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
 Gezählt:  Kaffee=4, Milch=3, Eier=2, Mehl=1
 -----------------------------------------------------
+❌ Abweichung festgestellt am Fri Jun 06 10:28:40 CEST 2025
+Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
+Gezählt:  Kaffee=3, Milch=2, Eier=2, Mehl=4
+-----------------------------------------------------
+❌ Abweichung festgestellt am Fri Jun 06 11:10:49 CEST 2025
+Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
+Gezählt:  Kaffee=2, Milch=2, Eier=2, Mehl=2
+-----------------------------------------------------
+❌ Abweichung festgestellt am Fri Jun 06 11:13:33 CEST 2025
+Kommentar: 
+Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
+Gezählt:  Kaffee=1, Milch=1, Eier=1, Mehl=1
+-----------------------------------------------------
+❌ Abweichung festgestellt am Fri Jun 06 11:18:00 CEST 2025
+Kommentar: 
+Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
+Gezählt:  Kaffee=1, Milch=1, Eier=2, Mehl=2
+-----------------------------------------------------
+❌ Abweichung festgestellt am Fri Jun 06 11:18:46 CEST 2025
+Kommentar: 
+Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
+Gezählt:  Kaffee=3, Milch=3, Eier=3, Mehl=3
+-----------------------------------------------------
+❌ Abweichung festgestellt am Fri Jun 06 11:22:12 CEST 2025
+Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
+Gezählt:  Kaffee=3, Milch=3, Eier=3, Mehl=3
+Kommentar: 
+-----------------------------------------------------
+❌ Abweichung festgestellt am Fri Jun 06 11:25:47 CEST 2025
+Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
+Gezählt:  Kaffee=3, Milch=3, Eier=3, Mehl=3
+Kommentar: 
+-----------------------------------------------------
+❌ Abweichung festgestellt am Fri Jun 06 11:28:15 CEST 2025
+Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
+Gezählt:  Kaffee=3, Milch=3, Eier=3, Mehl=4
+Kommentar: 
+-----------------------------------------------------
+❌ Abweichung festgestellt am Fri Jun 06 11:30:25 CEST 2025
+Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
+Gezählt:  Kaffee=3, Milch=3, Eier=3, Mehl=5
+Kommentar: 
+-----------------------------------------------------
+❌ Abweichung festgestellt am Fri Jun 06 11:37:47 CEST 2025
+Original: Kaffee=5, Milch=6, Eier=5, Mehl=5
+Gezählt:  Kaffee=1, Milch=1, Eier=1, Mehl=1
+Kommentar: test
+-----------------------------------------------------
+❌ Abweichung festgestellt am Thu Jun 26 11:20:12 CEST 2025
+- Kaffee: erwartet 3, gezählt 2
+-----------------------------------------------------
+❌ Abweichung festgestellt am Thu Jun 26 11:20:48 CEST 2025
+- Kaffee: erwartet 3, gezählt 2
+- Zucker: erwartet 9, gezählt 8
+-----------------------------------------------------
+❌ Abweichung festgestellt am Thu Jun 26 11:26:36 CEST 2025
+- Milch: erwartet 19, gezählt 0
+- Kaffee: erwartet 9, gezählt 0
+- Zucker: erwartet 9, gezählt 0
+- Test: erwartet 0, gezählt 3
+-----------------------------------------------------
+❌ Abweichung festgestellt am Thu Jun 26 11:31:14 CEST 2025
+- Test: erwartet 0, gezählt 1
+-----------------------------------------------------
+❌ Abweichung festgestellt am Thu Jun 26 11:40:15 CEST 2025
+- Test: erwartet 0, gezählt 1
+-----------------------------------------------------
+❌ Abweichung festgestellt am Thu Jun 26 11:49:31 CEST 2025
+- Kaffee: erwartet 9, gezählt 8
+- Test: erwartet 14, gezählt 12
+-----------------------------------------------------
+❌ Abweichung festgestellt am Thu Jun 26 11:55:11 CEST 2025
+- Kaffee: erwartet 9, gezählt 8
+- Test: erwartet 14, gezählt 12
+-----------------------------------------------------
+❌ Abweichung festgestellt am Thu Jun 26 11:58:39 CEST 2025
+- Milch: erwartet 19, gezählt 18
+- Test: erwartet 14, gezählt 10
+-----------------------------------------------------

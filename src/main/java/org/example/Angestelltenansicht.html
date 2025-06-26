@@ -15,23 +15,49 @@
             margin-bottom: 1rem;
         }
 
-        .produkt-buttons {
+        .top-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .top-buttons button {
+            padding: 0.6rem 1.2rem;
+            font-size: 1rem;
+            border: none;
+            background-color: #555;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .top-buttons button:hover {
+            background-color: #333;
+            transform: scale(1.05);
+        }
+
+        .produkt-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            max-width: 600px;
+            margin: 0 auto 1rem auto;
             gap: 1rem;
             justify-content: center;
-            margin-bottom: 1rem;
         }
 
         .produkt-buttons button {
             padding: 1rem 2rem;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             border: none;
             background-color: #007bff;
             color: white;
             border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
+            transition: background-color 0.2s ease, transform 0.2s ease;
         }
 
         .produkt-buttons button:hover {
@@ -105,6 +131,11 @@
 </head>
 <body>
 
+<div class="top-buttons">
+    <button onclick="logout()">Logout</button>
+    <button onclick="window.location.href='Bestands-Historie.html'">📦 Bestand zählen</button>
+</div>
+
 <h1>Bestellungen aufnehmen</h1>
 
 <div class="produkt-buttons" id="produktButtons"></div>
@@ -125,7 +156,7 @@
     const bestellung = {};
     const rezeptProdukte = new Set();
 
-    // Rezepte abrufen → Buttons generieren
+    // Produkte aus Rezepten laden
     fetch("http://localhost:3000/rezepte")
         .then(res => res.json())
         .then(data => {
@@ -203,6 +234,10 @@
                     alert("❌ Fehler beim Absenden.");
                 }
             });
+    }
+
+    function logout() {
+        window.location.href = "Login.html";
     }
 </script>
 

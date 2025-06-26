@@ -2,109 +2,110 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bestand zählen</title>
+  <title>📦 Bestand zählen</title>
   <style>
     body {
-
-      //Logout
-    <div style="position: absolute; top: 20px; right: 20px;">
-    <button onclick="logout()" style="background-color: #d9534f; color: white; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer;">
-    Logout
-    </button>
-    </div>
-
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       padding: 2rem;
+      background: #f0f0f0;
     }
-    h1 {
-      margin-bottom: 1.5rem;
-    }
-    .item {
+    table {
+      width: 100%;
+      border-collapse: collapse;
       background: white;
-      padding: 0.5rem 1rem;
-      margin: 0.5rem 0;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      width: 250px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      margin-bottom: 1rem;
     }
-    .item input {
-      width: 60px;
-      padding: 0.3rem;
-      text-align: center;
+    th, td {
+      padding: 0.8rem;
       border: 1px solid #ccc;
-      border-radius: 5px;
+      text-align: center;
+    }
+    th {
+      background-color: #eee;
+    }
+    input[type="number"] {
+      width: 80px;
+      padding: 0.4rem;
+    }
+    button {
+      padding: 0.6rem 1.5rem;
+      background-color: green;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .logout-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #888;
     }
   </style>
 </head>
 <body>
-<h1>Bestand zählen</h1>
 
-<div class="item">
-  <span>Kaffee</span>
-  <input type="number" min="0" id="kaffee">
-</div>
+<h1>📦 Lager zählen</h1>
 
-<div class="item">
-  <span>Milch</span>
-  <input type="number" min="0" id="milch">
-</div>
+<table id="bestandsTabelle">
+  <thead>
+  <tr>
+    <th>Produkt</th>
+    <th>Aktueller Bestand</th>
+    <th>Gezählt</th>
+  </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-<div class="item">
-  <span>Eier</span>
-  <input type="number" min="0" id="eier">
-</div>
+<button onclick="bestandEinreichen()">✅ Zählung absenden</button>
 
-<div class="item">
-  <span>Mehl</span>
-  <input type="number" min="0" id="mehl">
-</div>
-
-<div class="item">
-  <span>Kommentar</span>
-  <input type="text" id="kommentar" placeholder="Optional">
-</div>
-
-<button onclick="bestandSpeichern()">Speichern</button>
+<button onclick="window.location.href='Angestelltenansicht.html'" class="logout-btn">🔙 Zurück</button>
 
 <script>
-  function bestandSpeichern() {
-    const daten = {
-      kaffee: parseInt(document.getElementById("kaffee").value) || 0,
-      milch: parseInt(document.getElementById("milch").value) || 0,
-      eier: parseInt(document.getElementById("eier").value) || 0,
-      mehl: parseInt(document.getElementById("mehl").value) || 0,
-      kommentar: document.getElementById("kommentar").value || "von Mitarbeiter gespeichert"
-    };
+  let daten = [];
 
-    fetch("http://localhost:3000/bestand", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(daten)
-    })
+  function ladeProdukte() {
+    fetch("http://localhost:3000/produkte")
             .then(res => res.json())
             .then(data => {
-              if (data.success) {
-                alert("Bestand gespeichert!");
-              } else {
-                alert("Fehler beim Speichern.");
-              }
-            })
-            .catch(err => console.error("Fehler:", err));
+              daten = data;
+              const tbody = document.querySelector("#bestandsTabelle tbody");
+              tbody.innerHTML = "";
+              data.forEach(p => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                        <td>${p.name}</td>
+                        <td>${p.aktueller_bestand}</td>
+                        <td><input type="number" id="zaehlung-${p.id}" min="0"></td>
+                    `;
+                tbody.appendChild(row);
+              });
+            });
   }
 
-  //Logout
-  function logout() {
-    window.location.href = "Login.html"; // Leitet zurück zur Login-Seite
+  function bestandEinreichen() {
+    const abweichungen = [];
+
+    daten.forEach(p => {
+      const gezählt = parseInt(document.getElementById(`zaehlung-${p.id}`).value) || 0;
+      if (gezählt !== p.aktueller_bestand) {
+        abweichungen.push(`${p.name}: erwartet ${p.aktueller_bestand}, gezählt ${gezählt}`);
+      }
+    });
+
+    if (abweichungen.length > 0) {
+      fetch("http://localhost:3000/abweichung/melden", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ abweichungen })
+      }).then(() => alert("⚠️ Abweichungen gemeldet an den Chef!"));
+    } else {
+      alert("✅ Alles stimmt, keine Abweichungen.");
+    }
   }
 
+  ladeProdukte();
 </script>
 
 </body>

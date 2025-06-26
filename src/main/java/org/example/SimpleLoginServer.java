@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import com.google.gson.*;
 
 public class SimpleLoginServer {
@@ -35,7 +36,7 @@ public class SimpleLoginServer {
         server.createContext("/benutzer/anlegen", new BenutzerAnlegenHandler());
         server.createContext("/historie.html", new HtmlSeitenHandler("src/main/java/org/example/Bestands-Historie.html"));
         server.createContext("/bestand/historie", new BestandHistorieHandler());
-        server.createContext("/abweichungen", new AbweichungHandler());
+        server.createContext("/abweichung", new AbweichungHandler());
         server.createContext("/registrierung.html", new HtmlSeitenHandler("src/main/java/org" +
             "/example/registrieren.html"));
         server.createContext("/benutzer/loeschen", new BenutzerLoeschenHandler());
@@ -60,6 +61,7 @@ public class SimpleLoginServer {
         server.createContext("/produkte/bestand", new ProduktBestandAktualisierenHandler());
         server.createContext("/verkaufte_artikel/eintragen", new VerkaufteArtikelEintragenHandler());
         server.createContext("/", new StaticFileHandler("src/main/java/org/example"));
+        server.createContext("/abweichung/melden", new PruefHandler());
         server.setExecutor(null);
         server.start();
         File file = new File("abweichungen.txt");
@@ -215,6 +217,9 @@ public class SimpleLoginServer {
                     stmt.setInt(1, bestand);
                     stmt.setInt(2, id);
                     stmt.executeUpdate();
+
+                    // ⬅️ Abweichungen nach erfolgreichem Speichern entfernen
+                    conn.createStatement().executeUpdate("DELETE FROM pruefung WHERE stimmt_ueberein = false");
                 }
 
                 String response = "{\"success\": true}";
@@ -675,32 +680,46 @@ public class SimpleLoginServer {
 
 
     static class ProduktHinzufuegenHandler implements HttpHandler {
+        @Override
         public void handle(HttpExchange exchange) throws IOException {
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(204, -1);
                 return;
             }
 
             if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "UTF-8"));
-                JsonObject obj = JsonParser.parseString(reader.readLine()).getAsJsonObject();
-                String name = obj.get("name").getAsString();
-                int max = obj.get("max_kapazitaet").getAsInt();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "UTF-8"))) {
+                    JsonObject obj = JsonParser.parseString(reader.readLine()).getAsJsonObject();
+                    String name = obj.get("name").getAsString();
+                    int max = obj.get("max_kapazitaet").getAsInt();
+                    int bestand = obj.has("aktueller_bestand") ? obj.get("aktueller_bestand").getAsInt() : 0;
 
-                try (Connection conn = VerbindungDB.getConnection()) {
-                    PreparedStatement stmt = conn.prepareStatement("INSERT INTO produkte (name, max_kapazitaet) VALUES (?, ?)");
-                    stmt.setString(1, name);
-                    stmt.setInt(2, max);
-                    stmt.executeUpdate();
-                    String response = "{\"success\": true}";
-                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-                    exchange.sendResponseHeaders(200, response.length());
-                    exchange.getResponseBody().write(response.getBytes());
-                    exchange.getResponseBody().close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    exchange.sendResponseHeaders(500, -1);
+                    try (Connection conn = VerbindungDB.getConnection()) {
+                        PreparedStatement stmt = conn.prepareStatement(
+                            "INSERT INTO produkte (name, max_kapazitaet, aktueller_bestand) VALUES (?, ?, ?)"
+                        );
+                        stmt.setString(1, name);
+                        stmt.setInt(2, max);
+                        stmt.setInt(3, bestand);
+                        stmt.executeUpdate();
+
+                        String response = "{\"success\": true}";
+                        exchange.getResponseHeaders().set("Content-Type", "application/json");
+                        exchange.sendResponseHeaders(200, response.length());
+                        exchange.getResponseBody().write(response.getBytes());
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                        String error = "{\"success\": false, \"message\": \"Datenbankfehler\"}";
+                        exchange.getResponseHeaders().set("Content-Type", "application/json");
+                        exchange.sendResponseHeaders(500, error.length());
+                        exchange.getResponseBody().write(error.getBytes());
+                    } finally {
+                        exchange.getResponseBody().close();
+                    }
                 }
             } else {
                 exchange.sendResponseHeaders(405, -1);
@@ -722,7 +741,7 @@ public class SimpleLoginServer {
         public void handle(HttpExchange exchange) throws IOException {
             String path = exchange.getRequestURI().getPath();
             if (path.equals("/")) {
-                path = "/Chef.html";
+                path = "/Login.html";
             }
 
             File file = new File(basePath + path);
@@ -1317,9 +1336,8 @@ public class SimpleLoginServer {
     static class PruefHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            // CORS-Header
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
             exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
 
             if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
@@ -1327,84 +1345,48 @@ public class SimpleLoginServer {
                 return;
             }
 
-            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "utf-8"));
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    sb.append(line);
-                }
-
-                JsonObject json = JsonParser.parseString(sb.toString()).getAsJsonObject();
-                int kaffee = json.get("kaffee").getAsInt();
-                int milch = json.get("milch").getAsInt();
-                int eier = json.get("eier").getAsInt();
-                int mehl = json.get("mehl").getAsInt();
-                String kommentar = json.has("kommentar") ? json.get("kommentar").getAsString() : "";
-
-
-                // Letzten Original-Bestand holen
-                String url = "jdbc:mysql://localhost:3306/lagerbestand?useSSL=false";
-                String dbUser = "javauser";
-                String dbPass = "passwort123";
-
-
-                try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
-                    Statement stmt = conn.createStatement();
-                    ResultSet rs = stmt.executeQuery("SELECT * FROM bestand ORDER BY gespeichert_am DESC LIMIT 1");
-
-                    if (rs.next()) {
-                        int origId = rs.getInt("id");
-                        boolean stimmt = (
-                            rs.getInt("kaffee") == kaffee &&
-                                rs.getInt("milch") == milch &&
-                                rs.getInt("eier") == eier &&
-                                rs.getInt("mehl") == mehl
-                        );
-
-                        PreparedStatement insert = conn.prepareStatement(
-                            "INSERT INTO pruefung (original_id, kaffee, milch, eier, mehl, stimmt_ueberein) VALUES (?, ?, ?, ?, ?, ?)"
-                        );
-                        insert.setInt(1, origId);
-                        insert.setInt(2, kaffee);
-                        insert.setInt(3, milch);
-                        insert.setInt(4, eier);
-                        insert.setInt(5, mehl);
-                        insert.setBoolean(6, stimmt);
-                        insert.executeUpdate();
-
-                        String response = stimmt
-                                          ? "{\"success\": true, \"message\": \"Bestände stimmen überein.\"}"
-                                          : "{\"success\": false, \"message\": \"Abweichung festgestellt. Chef wurde benachrichtigt.\"}";
-
-                        exchange.getResponseHeaders().set("Content-Type", "application/json");
-                        exchange.sendResponseHeaders(200, response.length());
-                        OutputStream os = exchange.getResponseBody();
-                        os.write(response.getBytes());
-                        os.close();
-
-                        if (!stimmt) {
-                            // Nachricht an den "Chef" speichern
-                            try (FileWriter fw = new FileWriter("abweichungen.txt", true);
-                                 BufferedWriter bw = new BufferedWriter(fw);
-                                 PrintWriter out = new PrintWriter(bw)) {
-                                out.println("❌ Abweichung festgestellt am " + new java.util.Date());
-                                out.println("Original: Kaffee=" + rs.getInt("kaffee") + ", Milch=" + rs.getInt("milch") + ", Eier=" + rs.getInt("eier") + ", Mehl=" + rs.getInt("mehl"));
-                                out.println("Gezählt:  Kaffee=" + kaffee + ", Milch=" + milch + ", Eier=" + eier + ", Mehl=" + mehl);
-                                out.println("Kommentar: " + kommentar);
-                                out.println("-----------------------------------------------------");
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    exchange.sendResponseHeaders(500, -1);
-                }
-            } else {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(405, -1);
+                return;
+            }
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8))) {
+                String body = reader.lines().collect(Collectors.joining());
+                JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+                JsonArray abweichungen = json.getAsJsonArray("abweichungen");
+
+                if (abweichungen == null || abweichungen.size() == 0) {
+                    String response = "{\"success\": true, \"message\": \"Keine Abweichungen.\"}";
+                    sendResponse(exchange, 200, response);
+                    return;
+                }
+
+                try (FileWriter fw = new FileWriter("abweichungen.txt", true);
+                     BufferedWriter bw = new BufferedWriter(fw);
+                     PrintWriter out = new PrintWriter(bw)) {
+
+                    out.println("❌ Abweichung festgestellt am " + new java.util.Date());
+                    for (JsonElement e : abweichungen) {
+                        out.println("- " + e.getAsString());
+                    }
+                    out.println("-----------------------------------------------------");
+                }
+
+                String response = "{\"success\": false, \"message\": \"Abweichung festgestellt. Chef wurde benachrichtigt.\"}";
+                sendResponse(exchange, 200, response);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                String response = "{\"success\": false, \"message\": \"Fehler beim Verarbeiten.\"}";
+                sendResponse(exchange, 500, response);
+            }
+        }
+
+        private void sendResponse(HttpExchange exchange, int code, String message) throws IOException {
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(code, message.length());
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(message.getBytes());
             }
         }
     }
