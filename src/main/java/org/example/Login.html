@@ -106,25 +106,23 @@
 
         fetch('http://localhost:3000/login', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    if (username === "admin") {
-                        window.location.href = "Chef.html";
-                    } else {
-                        window.location.href = "Angestelltenansicht.html";
-                    }
+                    localStorage.setItem("ist_chef", data.ist_chef); // ⬅️ wichtig
+                    localStorage.setItem("user_id", data.user_id);   // ⬅️ für spätere Rechteprüfungen
+
+                    // Weiterleitung nach Login
+                    window.location.href = "Angestelltenansicht.html";
                 } else {
                     alert("❌ Falscher Name oder Passwort!");
                 }
             })
             .catch(error => {
-                console.error('Fehler beim Login:', error);
+                console.error("Fehler beim Login:", error);
                 alert("❌ Serverfehler beim Login.");
             });
     }

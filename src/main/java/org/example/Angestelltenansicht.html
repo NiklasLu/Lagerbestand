@@ -136,6 +136,10 @@
 <div class="top-buttons">
     <button onclick="logout()">Logout</button>
     <button onclick="window.location.href='Bestands-Historie.html'">📦 Bestand zählen</button>
+    <button id="chefButton" onclick="window.location.href='Chef.html'"
+            style="display: none;">Warenverwaltung
+    </button>
+
 </div>
 
 <h1>Bestellungen aufnehmen</h1>
@@ -153,6 +157,16 @@
 </div>
 
 <script>
+
+    window.onload = () => {
+        const istChef = localStorage.getItem("ist_chef");
+        if (istChef === "true") {
+            document.getElementById("chefButton").style.display = "inline-block";
+        }
+    };
+
+
+
     let aktuelleMenge = "";
     let letztesProdukt = null;
     const bestellung = {};
@@ -255,6 +269,19 @@
     function logout() {
         window.location.href = "Login.html";
     }
+
+    window.addEventListener("DOMContentLoaded", () => {
+        const istChef = localStorage.getItem("ist_chef");
+        const chefBtn = document.getElementById("chefBtn");
+        if (chefBtn) {
+            if (istChef === "1" || istChef === "true") {
+                chefBtn.style.display = "inline-block";
+            } else {
+                chefBtn.remove();
+            }
+        }
+    });
+
 </script>
 
 </body>

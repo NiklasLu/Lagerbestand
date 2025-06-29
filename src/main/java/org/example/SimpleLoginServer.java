@@ -1295,41 +1295,51 @@ public class SimpleLoginServer {
                 String username = json.get("username").getAsString();
                 String password = json.get("password").getAsString();
 
-                boolean success = checkLogin(username, password);
+                JsonObject result = checkLogin(username, password);
 
-                String response = "{\"success\":" + success + "}";
+                String response = result.toString();
                 exchange.getResponseHeaders().set("Content-Type", "application/json");
                 exchange.sendResponseHeaders(200, response.length());
-                OutputStream os = exchange.getResponseBody();
-                os.write(response.getBytes());
-                os.close();
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
             } else {
                 exchange.sendResponseHeaders(405, -1);
             }
         }
 
-        private boolean checkLogin(String username, String password) {
+        private JsonObject checkLogin(String username, String password) {
             String url = "jdbc:mysql://localhost:3306/lagerbestand?useSSL=false";
             String dbUser = "javauser";
             String dbPass = "passwort123";
 
+            JsonObject response = new JsonObject();
             try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
                 PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT * FROM benutzer WHERE name = ? AND passwort = ?"
+                    "SELECT id, ist_chef FROM benutzer WHERE name = ? AND passwort = ?"
                 );
                 stmt.setString(1, username);
-                stmt.setString(2, hashPassword(password)); // 🔐 Passwort vor dem Vergleich hashen
+                stmt.setString(2, hashPassword(password));
                 ResultSet rs = stmt.executeQuery();
 
-                boolean gefunden = rs.next();
-                System.out.println("Login-Versuch für '" + username + "' → gefunden: " + gefunden);
-                return gefunden;
+                if (rs.next()) {
+                    boolean istChef = rs.getBoolean("ist_chef");
+                    int userId = rs.getInt("id");
+                    response.addProperty("success", true);
+                    response.addProperty("ist_chef", istChef);
+                    response.addProperty("user_id", userId);
+                    System.out.println("✅ Login erfolgreich: " + username + " (ist_chef = " + istChef + ")");
+                } else {
+                    response.addProperty("success", false);
+                    System.out.println("❌ Login fehlgeschlagen für Benutzer: " + username);
+                }
 
             } catch (SQLException e) {
-                System.out.println("Fehler bei DB-Verbindung:");
                 e.printStackTrace();
-                return false;
+                response.addProperty("success", false);
             }
+
+            return response;
         }
     }
 
