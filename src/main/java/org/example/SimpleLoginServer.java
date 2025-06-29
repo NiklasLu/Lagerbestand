@@ -1683,6 +1683,23 @@ public class SimpleLoginServer {
                 String dbPass = "passwort123";
 
                 try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
+
+                    // 🛑 Existenzprüfung des Benutzernamens
+                    PreparedStatement checkStmt = conn.prepareStatement("SELECT COUNT(*) FROM benutzer WHERE name = ?");
+                    checkStmt.setString(1, name);
+                    ResultSet rs = checkStmt.executeQuery();
+                    rs.next();
+                    if (rs.getInt(1) > 0) {
+                        String response = "{\"success\": false, \"error\": \"Benutzername existiert bereits\"}";
+                        exchange.getResponseHeaders().set("Content-Type", "application/json");
+                        exchange.sendResponseHeaders(409, response.length()); // 409 Conflict
+                        try (OutputStream os = exchange.getResponseBody()) {
+                            os.write(response.getBytes());
+                        }
+                        return;
+                    }
+
+                    // 🟢 Einfügen, wenn Name noch nicht vergeben
                     PreparedStatement stmt = conn.prepareStatement(
                         "INSERT INTO benutzer (name, passwort, vorname, nachname) VALUES (?, ?, ?, ?)"
                     );
@@ -1746,16 +1763,6 @@ public class SimpleLoginServer {
                         array.add(user);
                     }
 
-//                    JsonArray array = new JsonArray();
-//                    while (rs.next()) {
-//                        JsonObject user = new JsonObject();
-//                        user.addProperty("id", rs.getInt("id"));
-//                        user.addProperty("name", rs.getString("name"));
-//                        user.addProperty("vorname", rs.getString("vorname"));
-//                        user.addProperty("nachname", rs.getString("nachname"));
-//                        array.add(user);
-//                    }
-
                     String response = new Gson().toJson(array);
                     exchange.getResponseHeaders().set("Content-Type", "application/json");
                     exchange.sendResponseHeaders(200, response.length());
@@ -1776,65 +1783,6 @@ public class SimpleLoginServer {
             }
         }
     }
-//    static class BenutzerAnlegenHandler implements HttpHandler {
-//        @Override
-//        public void handle(HttpExchange exchange) throws IOException {
-//            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-//            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-//            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
-//
-//            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
-//                exchange.sendResponseHeaders(204, -1);
-//                return;
-//            }
-//
-//            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
-//                BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody(), "utf-8"));
-//                StringBuilder sb = new StringBuilder();
-//                String line;
-//                while ((line = reader.readLine()) != null) {
-//                    sb.append(line);
-//                }
-//
-//                JsonObject json = JsonParser.parseString(sb.toString()).getAsJsonObject();
-//                String name = json.get("name").getAsString();
-//                String passwort = json.get("passwort").getAsString();
-//
-//                // 🔐 Passwort hashen
-//                String gehashtesPasswort = hashPassword(passwort);
-//
-//                String url = "jdbc:mysql://localhost:3306/lagerbestand?useSSL=false";
-//                String dbUser = "javauser";
-//                String dbPass = "passwort123";
-//
-//                try (Connection conn = DriverManager.getConnection(url, dbUser, dbPass)) {
-//                    PreparedStatement stmt = conn.prepareStatement(
-//                        "INSERT INTO benutzer (name, passwort) VALUES (?, ?)"
-//                    );
-//                    stmt.setString(1, name);
-//                    stmt.setString(2, gehashtesPasswort); // ← Hash speichern
-//                    stmt.executeUpdate();
-//
-//                    String response = "{\"success\": true}";
-//                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-//                    exchange.sendResponseHeaders(200, response.length());
-//                    try (OutputStream os = exchange.getResponseBody()) {
-//                        os.write(response.getBytes());
-//                    }
-//                } catch (SQLException e) {
-//                    e.printStackTrace();
-//                    String response = "{\"success\": false, \"error\": \"DB-Fehler\"}";
-//                    exchange.getResponseHeaders().set("Content-Type", "application/json");
-//                    exchange.sendResponseHeaders(500, response.length());
-//                    try (OutputStream os = exchange.getResponseBody()) {
-//                        os.write(response.getBytes());
-//                    }
-//                }
-//            } else {
-//                exchange.sendResponseHeaders(405, -1);
-//            }
-//        }
-//    }
 
     public static String hashPassword(String password) {
         try {

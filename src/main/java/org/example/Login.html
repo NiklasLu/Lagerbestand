@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -12,23 +13,27 @@
             height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: #f5e9db; /* Beige Hintergrund */
+            color: #4b2e2b;
             animation: fadeIn 1s ease-in;
         }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
         .login-container {
             background: white;
             padding: 2rem;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(75, 46, 43, 0.1);
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+
         .login-container img {
             width: 100px;
             height: 100px;
@@ -36,60 +41,61 @@
             margin-bottom: 1.5rem;
             border-radius: 10px;
         }
+
         .login-container input {
             width: 100%;
             padding: 0.75rem;
             margin: 0.5rem 0;
-            border: 1px solid #ccc;
+            border: 1px solid #4b2e2b;
             border-radius: 5px;
+            color: #4b2e2b;
         }
+
         .login-container button {
-            width: 50%;
-            padding: 0.5rem;
+            width: 60%;
+            padding: 0.6rem;
             margin-top: 1rem;
-            background-color: #808080;
+            background-color: #4b2e2b;
             color: white;
             border: none;
             border-radius: 5px;
             font-size: 1rem;
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.3s ease;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
         }
+
         .login-container button:hover {
-            background-color: #666666;
+            background-color: #3a2320;
             transform: scale(1.05);
         }
 
         .btn-registrieren {
             background-color: white;
-            color: #666;
-            border: 1px solid #ccc;
+            color: #4b2e2b;
+            border: 1px solid #4b2e2b;
             padding: 10px 16px;
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.2s;
-        }
-        .btn-registrieren:hover {
-            background-color: #f2f2f2;
+            margin-top: 0.8rem;
         }
 
+        .btn-registrieren:hover {
+            background-color: #f5e9db;
+        }
     </style>
 </head>
 <body>
 
 <div class="login-container">
-    <img src="../../../../../image.png" height="150" width="150"/>
+    <img src="../../../../../image.png" height="150" width="150" alt="Logo"/>
     <form onsubmit="login(event)" style="width: 100%;">
-        <input type="text" id="name" placeholder="Name" required>
+        <input type="text" id="name" placeholder="Benutzername" required>
         <input type="password" id="password" placeholder="Passwort" required>
         <button type="submit">Login</button>
     </form>
 
-    <button onclick="window.location.href='Registrierung.html'" class="btn-registrieren">Registrieren
-    </button>
+    <button onclick="window.location.href='Registrierung.html'" class="btn-registrieren">Registrieren</button>
 </div>
 
 <script>
@@ -97,8 +103,6 @@
         event.preventDefault();
         const username = document.getElementById('name').value;
         const password = document.getElementById('password').value;
-
-        console.log("Login gestartet mit", username, password);
 
         fetch('http://localhost:3000/login', {
             method: 'POST',
@@ -109,7 +113,6 @@
         })
             .then(response => response.json())
             .then(data => {
-                console.log("Antwort vom Server:", data);
                 if (data.success) {
                     if (username === "admin") {
                         window.location.href = "Chef.html";
@@ -126,5 +129,6 @@
             });
     }
 </script>
+
 </body>
 </html>

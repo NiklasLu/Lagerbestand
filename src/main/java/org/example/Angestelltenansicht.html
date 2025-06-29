@@ -7,8 +7,9 @@
         body {
             font-family: Arial, sans-serif;
             padding: 1rem;
-            background-color: #f4f4f4;
+            background-color: #f5e9db;
             text-align: center;
+            color: #4b2e2b;
         }
 
         h1 {
@@ -28,7 +29,7 @@
             padding: 0.6rem 1.2rem;
             font-size: 1rem;
             border: none;
-            background-color: #555;
+            background-color: #4b2e2b;
             color: white;
             border-radius: 6px;
             cursor: pointer;
@@ -36,7 +37,7 @@
         }
 
         .top-buttons button:hover {
-            background-color: #333;
+            background-color: #3a2320;
             transform: scale(1.05);
         }
 
@@ -53,7 +54,7 @@
             padding: 1rem 2rem;
             font-size: 1.1rem;
             border: none;
-            background-color: #007bff;
+            background-color: #4b2e2b;
             color: white;
             border-radius: 6px;
             cursor: pointer;
@@ -61,7 +62,7 @@
         }
 
         .produkt-buttons button:hover {
-            background-color: #0056b3;
+            background-color: #3a2320;
             transform: scale(1.05);
         }
 
@@ -69,12 +70,13 @@
             font-size: 2rem;
             font-weight: bold;
             margin-bottom: 1rem;
-            border: 2px solid #ccc;
+            border: 2px solid #4b2e2b;
             width: 100px;
             margin: 0 auto 1rem auto;
             padding: 0.5rem;
-            background-color: #fff;
+            background-color: white;
             border-radius: 8px;
+            color: #4b2e2b;
         }
 
         .numpad {
@@ -90,13 +92,13 @@
             font-size: 1.2rem;
             border-radius: 5px;
             cursor: pointer;
-            background-color: #e0e0e0;
+            background-color: #e0d4c4;
             border: none;
             transition: background-color 0.2s, transform 0.1s;
         }
 
         .numpad button:hover {
-            background-color: #ccc;
+            background-color: #d6c0ad;
             transform: scale(1.05);
         }
 
@@ -117,7 +119,7 @@
             margin-top: 1rem;
             padding: 1rem 2rem;
             font-size: 1rem;
-            background-color: green;
+            background-color: #4b2e2b;
             color: white;
             border: none;
             border-radius: 6px;
@@ -125,7 +127,7 @@
         }
 
         .abschicken-btn:hover {
-            background-color: darkgreen;
+            background-color: #3a2320;
         }
     </style>
 </head>
@@ -208,11 +210,25 @@
     function zeigeBestellung() {
         const ul = document.getElementById("bestellung");
         ul.innerHTML = "";
+
         Object.entries(bestellung).forEach(([produkt, anzahl]) => {
             const li = document.createElement("li");
-            li.textContent = `${produkt}: ${anzahl}x`;
+            li.innerHTML = `${produkt}: ${anzahl}x
+            <button onclick="produktEntfernen('${produkt}')" style="
+            margin-left: 8px;
+            background: none;
+            border: none;
+            color: #c00;
+            font-size: 1.2rem;
+            cursor: pointer;
+            " title="Entfernen">✖</button>`;
             ul.appendChild(li);
         });
+    }
+
+    function produktEntfernen(name) {
+        delete bestellung[name];
+        zeigeBestellung();
     }
 
     function bestellungAbsenden() {

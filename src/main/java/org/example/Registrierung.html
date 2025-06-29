@@ -12,31 +12,49 @@
             height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: #f5e9db;
+            color: #4b2e2b;
         }
+
         .register-container {
             background: white;
             padding: 2rem;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(75, 46, 43, 0.1);
             width: 300px;
             text-align: center;
         }
+
         .register-container h2 {
             margin-bottom: 1rem;
+            color: #4b2e2b;
         }
+
         .register-container input {
             width: 100%;
             padding: 0.75rem;
             margin: 0.5rem 0;
-            border: 1px solid #ccc;
+            border: 1px solid #4b2e2b;
             border-radius: 5px;
+            color: #4b2e2b;
         }
+
+        .register-container input.error {
+            border: 2px solid red;
+            background-color: #ffe5e5;
+        }
+
+        .register-container .error-message {
+            color: red;
+            font-size: 0.9rem;
+            margin-top: 0.2rem;
+        }
+
         .register-container button {
             width: 100%;
             padding: 0.6rem;
             margin-top: 1rem;
-            background-color: #007bff;
+            background-color: #4b2e2b;
             color: white;
             border: none;
             border-radius: 5px;
@@ -44,16 +62,19 @@
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.3s ease;
         }
+
         .register-container button:hover {
-            background-color: #0056b3;
+            background-color: #3a2320;
             transform: scale(1.05);
         }
+
         .back-link {
             display: block;
             margin-top: 1rem;
-            color: #666;
+            color: #4b2e2b;
             text-decoration: none;
         }
+
         .back-link:hover {
             text-decoration: underline;
         }
@@ -64,7 +85,10 @@
 <div class="register-container">
     <h2>Registrieren</h2>
     <form onsubmit="registrieren(event)">
+        <input type="text" id="vorname" placeholder="Vorname" required>
+        <input type="text" id="nachname" placeholder="Nachname" required>
         <input type="text" id="username" placeholder="Benutzername" required>
+        <div id="name-error" class="error-message" style="display:none;">❌ Benutzername existiert bereits!</div>
         <input type="password" id="password" placeholder="Passwort" required>
         <button type="submit">Registrieren</button>
     </form>
@@ -74,21 +98,36 @@
 <script>
     function registrieren(event) {
         event.preventDefault();
-        const name = document.getElementById('username').value;
-        const passwort = document.getElementById('password').value;
 
-        fetch("http://localhost:3000/registrieren", {
+        const vorname = document.getElementById('vorname').value;
+        const nachname = document.getElementById('nachname').value;
+        const name = document.getElementById('username');
+        const passwort = document.getElementById('password').value;
+        const fehlerBox = document.getElementById('name-error');
+
+        // Reset Fehlermeldung
+        fehlerBox.style.display = 'none';
+        name.classList.remove('error');
+
+        fetch("http://localhost:3000/benutzer/anlegen", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, passwort })
+            body: JSON.stringify({ name: name.value, passwort, vorname, nachname })
         })
-            .then(res => res.json())
+            .then(res => {
+                if (res.status === 409) {
+                    name.classList.add('error');
+                    fehlerBox.style.display = 'block';
+                    return { success: false };
+                }
+                return res.json();
+            })
             .then(data => {
                 if (data.success) {
                     alert("✅ Registrierung erfolgreich");
                     window.location.href = "Login.html";
-                } else {
-                    alert("❌ Fehler bei der Registrierung");
+                } else if (!data.success) {
+                    alert("❌ Fehler bei der Registrierung. Benutzername existiert bereits!");
                 }
             })
             .catch(err => {

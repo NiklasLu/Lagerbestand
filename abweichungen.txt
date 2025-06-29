@@ -93,3 +93,7 @@ Kommentar: test
 - Milch: erwartet 19, gezählt 18
 - Test: erwartet 14, gezählt 10
 -----------------------------------------------------
+❌ Abweichung festgestellt am Sun Jun 29 12:06:41 CEST 2025
+- Milch: erwartet 7, gezählt 4
+- Hafermilch: erwartet 5, gezählt 4
+-----------------------------------------------------
